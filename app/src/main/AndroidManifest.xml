@@ -37,8 +37,8 @@
     <!--  If Bluetooth is a critical piece of your app, you can add flags to your manifest
     file indicating this requirement. The <uses-feature> element allows you to specify
     the type of hardware your app uses and whether or not it is required.  -->
-    <uses-feature android:name="android.hardware.bluetooth" android:required="true"/>
-    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
 
     <application
         android:allowBackup="true"

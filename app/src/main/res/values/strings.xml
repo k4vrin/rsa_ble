@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">RSA_BLE</string>
+    <string name="warning_icon">Warning Icon</string>
 </resources>
