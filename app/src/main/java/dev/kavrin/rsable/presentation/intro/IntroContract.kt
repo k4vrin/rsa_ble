@@ -6,7 +6,7 @@ interface IntroContract :
     UnidirectionalViewModel<IntroContract.State, IntroContract.Effect, IntroContract.Event> {
     data class State(
         val isLoading: Boolean = true,
-        val isPermissionGranted: Boolean = false,
+        val isPermissionGranted: Boolean = true,
         val isPeripheralModeSupported: Boolean = true,
         val isBLESupported: Boolean = true
     )
@@ -14,6 +14,7 @@ interface IntroContract :
     sealed interface Effect {
         data object NavigateToPeripheral : Effect
         data object NavigateToCentral : Effect
+        data object AskForPermissions : Effect
     }
 
     sealed interface Event {

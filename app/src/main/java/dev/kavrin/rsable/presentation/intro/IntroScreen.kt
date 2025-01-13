@@ -1,9 +1,7 @@
 package dev.kavrin.rsable.presentation.intro
 
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothManager
-import android.content.pm.PackageManager
-import androidx.compose.animation.AnimatedVisibility
+import android.Manifest
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -13,28 +11,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.accompanist.permissions.rememberPermissionState
 import dev.kavrin.rsable.R
 import dev.kavrin.rsable.presentation.intro.components.RSAButton
 import dev.kavrin.rsable.presentation.theme.DarkGreen
 import dev.kavrin.rsable.presentation.theme.RsLight
-import dev.kavrin.rsable.presentation.theme.RsPink
 import dev.kavrin.rsable.presentation.theme.RsYellow
 import dev.kavrin.rsable.presentation.theme.padding
 import dev.kavrin.rsable.presentation.util.HorizontalSpacer
@@ -42,12 +37,12 @@ import dev.kavrin.rsable.presentation.util.PermissionsUtil
 import dev.kavrin.rsable.presentation.util.VerticalSpacer
 import dev.kavrin.rsable.presentation.util.collectInLaunchedEffect
 import dev.kavrin.rsable.presentation.util.isBleSupported
-import dev.kavrin.rsable.presentation.util.isBluetoothEnabled
-import dev.kavrin.rsable.presentation.util.isLocationEnabled
 import dev.kavrin.rsable.presentation.util.isPeripheralModeSupported
-import dev.kavrin.rsable.presentation.util.observeLocationState
 import dev.kavrin.rsable.presentation.util.use
+import dev.kavrin.rsable.util.safeLaunch
 import org.koin.androidx.compose.koinViewModel
+
+private const val TAG = "IntroScreen"
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -60,6 +55,8 @@ fun IntroScreenRoot(
     val (state, effect, dispatch) = use(viewModel)
     val blePermissionState =
         rememberMultiplePermissionsState(permissions = PermissionsUtil.blePermissions)
+    val bgPermissionState = rememberMultiplePermissionsState(permissions = PermissionsUtil.backgroundLocationPermission)
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(blePermissionState.allPermissionsGranted) {
         dispatch(IntroContract.Event.OnChangePermissionState(blePermissionState.allPermissionsGranted))
@@ -72,6 +69,12 @@ fun IntroScreenRoot(
 
             IntroContract.Effect.NavigateToPeripheral -> {
                 onNavigateToPeripheral()
+            }
+
+            IntroContract.Effect.AskForPermissions -> {
+                Log.d(TAG, "IntroScreenRoot: AskForPermissions")
+                blePermissionState.launchMultiplePermissionRequest()
+                bgPermissionState.launchMultiplePermissionRequest()
             }
         }
     }
@@ -93,6 +96,7 @@ fun IntroScreen(
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+
         dispatch(
             IntroContract.Event.OnPeripheralModeSupported(
                 context.isPeripheralModeSupported()

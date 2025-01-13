@@ -66,19 +66,21 @@ fun RSAButton(
 @Preview
 @Composable
 private fun RSAButtonPrev() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DarkGreen)
-    ) {
-        RSAButton(
-            modifier = Modifier,
-            title = "Peripheral",
-            enabled = true,
-            isLoading = false,
-            onClick = {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(DarkGreen)
+        ) {
+            RSAButton(
+                modifier = Modifier,
+                title = "Peripheral",
+                enabled = true,
+                isLoading = false,
+                onClick = {
 
-            }
-        )
+                }
+            )
+        }
     }
 }
