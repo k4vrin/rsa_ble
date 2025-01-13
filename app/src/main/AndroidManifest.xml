@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--  https://developer.android.com/develop/connectivity/bluetooth/bt-permissions  -->
+
+    <!-- Allows basic interaction with Bluetooth devices.
+    Needed For: Scanning for and connecting to BLE devices.  -->
+    <uses-permission android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30"/>
+    <!-- Used in older Android versions for managing Bluetooth state  -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30"/>
+    <!--  Required for scanning BLE devices.
+    Needed For: Discovering nearby BLE devices during a scan.
+    Foreground Permission: Must be explicitly granted by the user.  -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+
+    <!--  Required for connecting to BLE devices and interacting with their GATT services.
+    Needed For: Connecting to devices, reading, and writing characteristics.  -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!--  Required if the app acts as a BLE peripheral and advertises services.
+    Needed For: Advertising services when simulating BLE peripherals.  -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <!--  Allows access to precise location information required for BLE scanning.
+    Needed For: Scanning and discovering BLE devices.  -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!--  Required if the app performs BLE scans or connections in the background
+    Needed For: Ensuring scans and connections persist when the app is minimized.  -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!--  If Bluetooth is a critical piece of your app, you can add flags to your manifest
+    file indicating this requirement. The <uses-feature> element allows you to specify
+    the type of hardware your app uses and whether or not it is required.  -->
+    <uses-feature android:name="android.hardware.bluetooth" android:required="true"/>
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.RSA_BLE"
+        tools:targetApi="31">
+        <activity
+            android:name=".presentation.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.RSA_BLE">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
