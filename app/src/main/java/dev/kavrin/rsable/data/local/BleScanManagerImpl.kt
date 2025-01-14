@@ -35,6 +35,7 @@ class BleScanManagerImpl(
     @SuppressLint("MissingPermission")
     override fun startScan() {
 
+        Log.d(TAG, "startScan: Start Scan")
 
         val settings = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             ScanSettings.Builder()

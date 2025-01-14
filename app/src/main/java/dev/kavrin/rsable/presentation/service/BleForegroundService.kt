@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import dev.kavrin.rsable.R
 import dev.kavrin.rsable.data.local.BleScanManager
@@ -28,6 +29,7 @@ class BleForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "onStartCommand: $intent")
         when (intent?.action) {
             ACTION_START_SCAN -> bleScanManager.startScan()
             ACTION_STOP_SCAN -> bleScanManager.stopScan()

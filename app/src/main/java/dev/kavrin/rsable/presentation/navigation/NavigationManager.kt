@@ -8,6 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import dev.kavrin.rsable.presentation.screens.ble_list.ClientBleListScreenRoot
+import dev.kavrin.rsable.presentation.screens.ble_list.ClientBleListViewModel
 import dev.kavrin.rsable.presentation.screens.intro.IntroScreenRoot
 import dev.kavrin.rsable.presentation.screens.intro.IntroViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -36,19 +38,33 @@ fun NavigationManager(
             IntroScreenRoot(
                 viewModel = viewModel,
                 onNavigateToPeripheral = {
-                    navController.navigate(
-                        Route.PeripheralGraph
-                    )
+
                 },
-                onNavigateToCentral = {/* TODO:  */}
+                onNavigateToCentral = {
+                    navController.navigate(
+                        Route.ClientGraph
+                    )
+                }
             )
         }
 
-//        navigation<Route.PeripheralGraph>(
-//            startDestination = Route.PeripheralList
-//        ) {
-//
-//        }
+        navigation<Route.ClientGraph>(
+            startDestination = Route.ClientBleList
+        ) {
+            composable<Route.ClientBleList>(
+                exitTransition = {
+                    slideOutHorizontally()
+                },
+                popEnterTransition = {
+                    slideInHorizontally()
+                }
+            ) {navBackStackEntry ->
+                val viewModel = koinViewModel<ClientBleListViewModel>()
+                ClientBleListScreenRoot(
+                    viewModel = viewModel
+                )
+            }
+        }
     }
 
 }

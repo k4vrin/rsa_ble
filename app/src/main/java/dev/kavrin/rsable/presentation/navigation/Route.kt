@@ -8,11 +8,11 @@ sealed interface Route {
     data object Intro : Route
 
     @Serializable
-    data object PeripheralGraph : Route
+    data object ClientGraph : Route
 
     @Serializable
-    data object PeripheralList : Route
+    data object ClientBleList : Route
 
     @Serializable
-    data object PeripheralDetail : Route
+    data object ClientBleDetail : Route
 }

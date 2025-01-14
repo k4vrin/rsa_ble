@@ -1,7 +1,7 @@
 package dev.kavrin.rsable.domain.model
 
 data class BleDevice(
-    val macAddress: String,
+    val macAddress: MacAddress,
     val name: String?,
     val rssi: Int,
     val previousRssi: Int,

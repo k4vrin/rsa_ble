@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanResult
 import android.os.Parcelable
+import dev.kavrin.rsable.domain.model.BleDevice
+import dev.kavrin.rsable.domain.model.BleDeviceType
 import dev.kavrin.rsable.domain.model.MacAddress
 import kotlinx.parcelize.Parcelize
 
@@ -19,34 +21,18 @@ data class DiscoveredBleDevice(
     val highestRssi: Int = 0,
 ) : Parcelable {
 
-    fun hasRssiLevelChanged(): Boolean {
+    fun isRssiLevelDifferent(): Boolean {
         return getRssiLevel(rssi) != getRssiLevel(previousRssi)
     }
 
-    /**
-     * Calculates the RSSI (Received Signal Strength Indicator) level based on the provided RSSI value.
-     *
-     * This function maps the RSSI value to a level ranging from 0 to 4, where:
-     * - 0 represents the weakest signal (RSSI in the range of Int.MIN_VALUE to 10).
-     * - 1 represents a weak signal (RSSI in the range of 11 to 28).
-     * - 2 represents a moderate signal (RSSI in the range of 29 to 45).
-     * - 3 represents a strong signal (RSSI in the range of 46 to 65).
-     * - 4 represents the strongest signal or an out-of-range/invalid RSSI(RSSI in the range greater than 65).
-     *
-     * Note: The provided RSSI values are assumed to be already processed and not raw dBm values.
-     *       The specific thresholds (10, 28, 45, 65) are arbitrary and can be adjusted based on the
-     *       specific use case or hardware requirements.
-     *
-     * @param rssi The RSSI value (integer) to determine the level for.
-     * @return An integer representing the RSSI level (0 to 4).
-     */
-    private fun getRssiLevel(rssi: Int): Int {
+
+    private fun getRssiLevel(rssi: Int): RssiLevel {
         return when (rssi) {
-            in Int.MIN_VALUE..10 -> 0
-            in 11..28 -> 1
-            in 29..45 -> 2
-            in 46..65 -> 3
-            else -> 4
+            in Int.MIN_VALUE..10 -> RssiLevel.WEAKEST
+            in 11..28 -> RssiLevel.WEAK
+            in 29..45 -> RssiLevel.MODERATE
+            in 46..65 -> RssiLevel.STRONG
+            else -> RssiLevel.STRONGEST
         }
     }
 
@@ -87,6 +73,18 @@ data class DiscoveredBleDevice(
         }
         return super.equals(other)
     }
+
+    fun toBleDevice(): BleDevice {
+        val bleDeviceType = device.uuids?.firstOrNull()?.toString()?.let { BleDeviceType.fromUuid(it) } ?: BleDeviceType.UNKNOWN
+        return BleDevice(
+            macAddress = macAddress(),
+            name = name,
+            rssi = rssi,
+            previousRssi = previousRssi,
+            highestRssi = highestRssi,
+            bleDeviceType = bleDeviceType
+        )
+    }
 }
 
 fun ScanResult.toDiscoveredBluetoothDevice(name: String? = null): DiscoveredBleDevice {
@@ -98,4 +96,8 @@ fun ScanResult.toDiscoveredBluetoothDevice(name: String? = null): DiscoveredBleD
         rssi = rssi,
         highestRssi = rssi
     )
+}
+
+enum class RssiLevel {
+    WEAKEST, WEAK, MODERATE, STRONG, STRONGEST
 }

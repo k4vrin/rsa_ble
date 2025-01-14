@@ -56,7 +56,6 @@ fun IntroScreenRoot(
     val blePermissionState =
         rememberMultiplePermissionsState(permissions = PermissionsUtil.blePermissions)
     val bgPermissionState = rememberMultiplePermissionsState(permissions = PermissionsUtil.backgroundLocationPermission)
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(blePermissionState.allPermissionsGranted) {
         dispatch(IntroContract.Event.OnChangePermissionState(blePermissionState.allPermissionsGranted))
@@ -139,7 +138,7 @@ fun IntroScreen(
             )
             VerticalSpacer(MaterialTheme.padding.medium)
             RSAButton(
-                title = "Peripheral",
+                title = "Peripheral(Server)",
                 enabled = state.isBLESupported && state.isPermissionGranted,
                 onClick = { dispatch(IntroContract.Event.OnNavigateToPeripheral) }
             )
@@ -147,7 +146,7 @@ fun IntroScreen(
             VerticalSpacer(MaterialTheme.padding.medium)
 
             RSAButton(
-                title = "Central",
+                title = "Central(Client)",
                 enabled = state.isBLESupported && state.isPeripheralModeSupported && state.isPermissionGranted,
                 onClick = { dispatch(IntroContract.Event.OnNavigateToCentral) }
             )

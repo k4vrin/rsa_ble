@@ -32,8 +32,16 @@ class IntroViewModel : ViewModel(), IntroContract {
 
     override fun onEvent(event: IntroContract.Event) {
         when (event) {
-            IntroContract.Event.OnNavigateToCentral -> {/* TODO:  */}
-            IntroContract.Event.OnNavigateToPeripheral -> {/* TODO:  */}
+            IntroContract.Event.OnNavigateToCentral -> {
+                viewModelScope.safeLaunch {
+                    effectChannel.send(IntroContract.Effect.NavigateToCentral)
+                }
+            }
+            IntroContract.Event.OnNavigateToPeripheral -> {
+                viewModelScope.safeLaunch {
+                    effectChannel.send(IntroContract.Effect.NavigateToPeripheral)
+                }
+            }
             is IntroContract.Event.OnBleSupported -> {/* TODO:  */}
             is IntroContract.Event.OnChangePermissionState -> {
                 Log.d(TAG, "onEvent OnChangePermissionState isGranted: ${event.isGranted}")

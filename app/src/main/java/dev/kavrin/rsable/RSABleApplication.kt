@@ -1,6 +1,7 @@
 package dev.kavrin.rsable
 
 import android.app.Application
+import dev.kavrin.rsable.di.repoModule
 import dev.kavrin.rsable.di.viewModelModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -11,7 +12,7 @@ class RSABleApplication: Application() {
 
         startKoin {
             androidContext(this@RSABleApplication)
-            modules(viewModelModule)
+            modules(viewModelModule, repoModule)
         }
     }
 }

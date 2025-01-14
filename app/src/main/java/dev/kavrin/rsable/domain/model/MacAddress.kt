@@ -2,7 +2,7 @@ package dev.kavrin.rsable.domain.model
 
 
 @JvmInline
-value class MacAddress(private val value: String) {
+value class MacAddress(val value: String) {
 
     init {
         require(isValid(value)) { "Invalid MAC address: $value" }
