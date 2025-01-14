@@ -8,8 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import dev.kavrin.rsable.presentation.intro.IntroScreenRoot
-import dev.kavrin.rsable.presentation.intro.IntroViewModel
+import dev.kavrin.rsable.presentation.screens.intro.IntroScreenRoot
+import dev.kavrin.rsable.presentation.screens.intro.IntroViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

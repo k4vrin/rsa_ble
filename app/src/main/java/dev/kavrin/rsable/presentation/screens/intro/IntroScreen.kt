@@ -1,4 +1,4 @@
-package dev.kavrin.rsable.presentation.intro
+package dev.kavrin.rsable.presentation.screens.intro
 
 import android.Manifest
 import android.util.Log
@@ -27,7 +27,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.kavrin.rsable.R
-import dev.kavrin.rsable.presentation.intro.components.RSAButton
+import dev.kavrin.rsable.presentation.screens.intro.components.RSAButton
 import dev.kavrin.rsable.presentation.theme.DarkGreen
 import dev.kavrin.rsable.presentation.theme.RsLight
 import dev.kavrin.rsable.presentation.theme.RsYellow

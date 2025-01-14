@@ -1,4 +1,4 @@
-package dev.kavrin.rsable.presentation.intro
+package dev.kavrin.rsable.presentation.screens.intro
 
 import dev.kavrin.rsable.presentation.util.UnidirectionalViewModel
 

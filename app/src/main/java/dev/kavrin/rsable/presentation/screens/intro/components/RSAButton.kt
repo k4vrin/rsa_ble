@@ -1,4 +1,4 @@
-package dev.kavrin.rsable.presentation.intro.components
+package dev.kavrin.rsable.presentation.screens.intro.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn

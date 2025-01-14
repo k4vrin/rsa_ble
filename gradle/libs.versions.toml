@@ -62,5 +62,6 @@ coil-mp = { module = "io.coil-kt.coil3:coil", version.ref = "coil3" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-parcelable = { id = "org.jetbrains.kotlin.plugin.parcelize" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
