@@ -45,6 +45,7 @@ class ClientBleListViewModel(
             }
 
             ClientBleListContract.Event.OnStopScan -> {
+                Log.d(TAG, "onEvent: stop scan")
                 viewModelScope.safeLaunch {
                     effectChannel.send(ClientBleListContract.Effect.StopScan)
                 }

@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanResult
 import android.os.Parcelable
+import android.util.Log
+import dev.kavrin.rsable.data.util.ScanRecordParser
 import dev.kavrin.rsable.domain.model.BleDevice
 import dev.kavrin.rsable.domain.model.BleDeviceType
 import dev.kavrin.rsable.domain.model.MacAddress
@@ -74,16 +76,58 @@ data class DiscoveredBleDevice(
         return super.equals(other)
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     fun toBleDevice(): BleDevice {
-        val bleDeviceType = device.uuids?.firstOrNull()?.toString()?.let { BleDeviceType.fromUuid(it) } ?: BleDeviceType.UNKNOWN
+        val scanRecord = scanResult?.scanRecord
+        val uuidString = scanRecord?.serviceUuids
+            ?.firstOrNull {
+                val uuidString = it.toString()
+                BleDeviceType.fromUuid(uuidString) != BleDeviceType.UNKNOWN
+            }?.toString()
+        Log.d(TAG, "toBleDevice. Advertisement data: ${getManuAdvData(scanRecord?.bytes)}")
+        val bleDeviceType = uuidString?.let { BleDeviceType.fromUuid(it) } ?: BleDeviceType.UNKNOWN
+
+        val deviceName = scanRecord?.deviceName?.takeIf { it.isNotBlank() }
+            ?: device.name?.takeIf { it.isNotBlank() }
+            ?: macAddress().value
+
         return BleDevice(
             macAddress = macAddress(),
-            name = name,
+            name = deviceName,
             rssi = rssi,
             previousRssi = previousRssi,
             highestRssi = highestRssi,
             bleDeviceType = bleDeviceType
         )
+    }
+
+    companion object {
+        private const val TAG = "DiscoveredBleDevice"
+
+        private fun getManuAdvData(bytes: ByteArray?): String? {
+            val builder = StringBuilder()
+            val strManu = ScanRecordParser.getAdvertisements(bytes).find {
+                it?.contains("Manufacturer Specific Data", ignoreCase = true) == true
+            }
+
+            if (strManu.isNullOrBlank() || !strManu.contains(
+                    "Wesko Name",
+                    ignoreCase = true
+                )
+            ) return null
+            val firstTwoBytes = strManu.substringBefore("<br/>")
+                .replace(oldValue = "Manufacturer Specific Data&&Company Code: 0x", "")
+            builder.append(firstTwoBytes.substring(2))
+            builder.append(firstTwoBytes.substring(0, 2))
+            val dataBytesStr = strManu.substring(
+                startIndex = strManu.indexOf("<br/>") + 5,
+                endIndex = strManu.lastIndexOf("<br/>")
+            )
+                .replace("Data: 0x", "")
+            builder.append(dataBytesStr)
+
+            return builder.toString()
+        }
     }
 }
 
@@ -91,7 +135,7 @@ fun ScanResult.toDiscoveredBluetoothDevice(name: String? = null): DiscoveredBleD
     return DiscoveredBleDevice(
         device = device,
         scanResult = this,
-        name = if (!name.isNullOrBlank()) name else if (scanRecord != null) scanRecord!!.deviceName else null,
+        name = if (scanRecord?.deviceName.isNullOrBlank()) scanRecord?.deviceName else if (scanRecord != null) name else null,
         previousRssi = rssi,
         rssi = rssi,
         highestRssi = rssi

@@ -33,6 +33,7 @@
     Needed For: Ensuring scans and connections persist when the app is minimized.  -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <!--  If Bluetooth is a critical piece of your app, you can add flags to your manifest
     file indicating this requirement. The <uses-feature> element allows you to specify
@@ -40,6 +41,7 @@
     <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:name=".RSABleApplication"
         android:allowBackup="false"
@@ -64,10 +66,11 @@
         </activity>
 
         <service android:name=".presentation.service.BleForegroundService"
-            android:exported="false">
+            android:exported="false"
+            android:foregroundServiceType="location">
             <intent-filter>
-                <action android:name="START_SCAN" />
-                <action android:name="STOP_SCAN" />
+                <action android:name="dev.kavrin.rsable.START_SCAN" />
+                <action android:name="dev.kavrin.rsable.STOP_SCAN" />
             </intent-filter>
         </service>
     </application>
