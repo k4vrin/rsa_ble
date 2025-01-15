@@ -9,6 +9,6 @@ enum class BleDeviceType(val uuid: String) {
     UNKNOWN(""); // For unknown devices
 
     companion object {
-        fun fromUuid(uuid: String): BleDeviceType = entries.find { it.uuid == uuid } ?: UNKNOWN
+        fun fromUuid(uuid: String): BleDeviceType = entries.find { it.uuid.uppercase() == uuid.uppercase() } ?: UNKNOWN
     }
 }

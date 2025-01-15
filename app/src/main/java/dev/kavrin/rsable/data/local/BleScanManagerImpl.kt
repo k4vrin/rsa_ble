@@ -14,11 +14,13 @@ import dev.kavrin.rsable.domain.model.BleScanError
 import dev.kavrin.rsable.domain.model.BleScanResource
 import dev.kavrin.rsable.domain.model.MacAddress
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.receiveAsFlow
 
 class BleScanManagerImpl(
     bleAdapter: BluetoothAdapter,
@@ -27,9 +29,9 @@ class BleScanManagerImpl(
     private val scanner = bleAdapter.bluetoothLeScanner
     private val devices = mutableMapOf<MacAddress, DiscoveredBleDevice>()
 
-    private val _result = MutableStateFlow<BleScanResource<List<DiscoveredBleDevice>>>(BleScanResource.createLoading())
+    private val _result = Channel<BleScanResource<List<DiscoveredBleDevice>>>()
     @OptIn(FlowPreview::class)
-    override val result: Flow<BleScanResource<List<DiscoveredBleDevice>>> = _result.asSharedFlow().debounce(250)
+    override val result: Flow<BleScanResource<List<DiscoveredBleDevice>>> = _result.receiveAsFlow().debounce(250)
 
 
     @SuppressLint("MissingPermission")
@@ -40,7 +42,7 @@ class BleScanManagerImpl(
         val settings = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             ScanSettings.Builder()
                 // A balance between scan speed and power consumption.
-                .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                 // This line disables the use of legacy scanning. Legacy scanning is an older approach
                 // to BLE scanning that is less efficient and has been superseded by newer methods.
                 // By setting this to false, we ensure that the scan uses the modern, optimized approach.
@@ -51,7 +53,7 @@ class BleScanManagerImpl(
                 .build()
         } else {
             ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                 .setReportDelay(0)
                 .build()
         }
@@ -63,7 +65,7 @@ class BleScanManagerImpl(
             /* callback = */ this
         )
 
-        _result.tryEmit(BleScanResource.createLoading())
+        _result.trySend(BleScanResource.createLoading())
     }
 
     @SuppressLint("MissingPermission")
@@ -72,7 +74,7 @@ class BleScanManagerImpl(
             scanner.stopScan(this)
         }.getOrElse {
             Log.d(TAG, "stopScan Failed to stop scanning. error: ${it.localizedMessage}")
-            _result.tryEmit(BleScanResource.createError(BleScanError.StopScanFailed))
+            _result.trySend(BleScanResource.createError(BleScanError.StopScanFailed))
         }
     }
 
@@ -85,7 +87,7 @@ class BleScanManagerImpl(
         existingDevice?.let {
             if (!existingDevice.hasSameData(scanResult)) {
                 devices[macAddress] = scanResult.toDiscoveredBluetoothDevice()
-                _result.tryEmit(BleScanResource.createSuccess(devices.values.toList()))
+                _result.trySend(BleScanResource.createSuccess(devices.values.toList()))
             }
             return
         }
@@ -103,13 +105,13 @@ class BleScanManagerImpl(
     override fun onScanResult(callbackType: Int, result: ScanResult?) {
         result?.let {
             addDevice(scanResult = result)
-            _result.tryEmit(BleScanResource.createSuccess(devices.values.toList()))
+            _result.trySend(BleScanResource.createSuccess(devices.values.toList()))
         }
     }
 
     override fun onScanFailed(errorCode: Int) {
         Log.d(TAG, "onScanFailed errorCode: $errorCode")
-        _result.tryEmit(BleScanResource.createError(mapScanError(errorCode)))
+        _result.trySend(BleScanResource.createError(mapScanError(errorCode)))
     }
 
     companion object {
