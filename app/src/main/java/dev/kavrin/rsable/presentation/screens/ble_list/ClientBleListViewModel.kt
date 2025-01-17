@@ -3,6 +3,7 @@ package dev.kavrin.rsable.presentation.screens.ble_list
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.kavrin.rsable.data.local.BleGattManager
 import dev.kavrin.rsable.data.local.BleScanManager
 import dev.kavrin.rsable.domain.model.BleScanResource
 import dev.kavrin.rsable.util.safeLaunch
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.update
 
 class ClientBleListViewModel(
     private val bleScanManager: BleScanManager,
+    private val bleGattManager: BleGattManager
 ) : ViewModel(), ClientBleListContract {
 
     private val _state = MutableStateFlow(ClientBleListContract.State())
@@ -49,6 +51,10 @@ class ClientBleListViewModel(
                 viewModelScope.safeLaunch {
                     effectChannel.send(ClientBleListContract.Effect.StopScan)
                 }
+            }
+
+            is ClientBleListContract.Event.OnDeviceClicked -> {
+                bleGattManager.connectToDevice()
             }
         }
     }

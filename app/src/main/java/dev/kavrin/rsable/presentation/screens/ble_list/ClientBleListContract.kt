@@ -20,5 +20,6 @@ interface ClientBleListContract :
     sealed interface Event {
         data object OnStartScan : Event
         data object OnStopScan : Event
+        data class OnDeviceClicked(val bleDevice: BleDevice) : Event
     }
 }

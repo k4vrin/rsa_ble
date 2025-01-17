@@ -5,8 +5,10 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -69,6 +72,7 @@ fun ClientBleListScreenRoot(
                 Log.d(TAG, "ClientBleListScreenRoot:StartScan ")
                 context.manageBleService(eff)
             }
+
             ClientBleListContract.Effect.StopScan -> {
                 Log.d(TAG, "stop scan: $eff ")
                 context.manageBleService(eff)
@@ -84,11 +88,24 @@ fun ClientBleListScreenRoot(
         }
     }
 
-    ClientBleListScreen(
-        modifier = modifier,
-        state = state,
-        dispatch = dispatch
-    )
+    Box {
+        ClientBleListScreen(
+            modifier = modifier,
+            state = state,
+            dispatch = dispatch
+        )
+
+        AnimatedVisibility(state.isLoading) {
+            ElevatedCard {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -122,7 +139,10 @@ fun ClientBleListScreen(
                 key = { it.macAddress.value }
             ) {
 
-                Box {
+                Box(
+                    modifier = Modifier
+                        .clickable { dispatch(ClientBleListContract.Event.OnDeviceClicked(it)) }
+                ) {
 
                     Card(
                         modifier = Modifier
@@ -137,7 +157,6 @@ fun ClientBleListScreen(
                                 .background(RsOrange)
                                 .padding(MaterialTheme.padding.small)
                         ) {
-
 
 
                             Row(
@@ -162,17 +181,22 @@ fun ClientBleListScreen(
 
                                     Box(
                                         modifier = Modifier
-                                            .fillMaxSize()
-                                        ,
+                                            .fillMaxSize(),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             modifier = Modifier
                                                 .size(40.dp),
                                             painter = when (it.bleDeviceType) {
-                                                BleDeviceType.HEART_RATE_MONITOR -> painterResource(R.drawable.ic_monitor_heart_24)
+                                                BleDeviceType.HEART_RATE_MONITOR -> painterResource(
+                                                    R.drawable.ic_monitor_heart_24
+                                                )
+
                                                 BleDeviceType.PROXIMITY_MONITOR -> painterResource(R.drawable.ic_screenshot_monitor_24)
-                                                BleDeviceType.BLOOD_PRESSURE_MONITOR -> painterResource(R.drawable.ic_bloodtype_24)
+                                                BleDeviceType.BLOOD_PRESSURE_MONITOR -> painterResource(
+                                                    R.drawable.ic_bloodtype_24
+                                                )
+
                                                 BleDeviceType.CYCLING_MONITOR -> painterResource(R.drawable.ic_cyclone_24)
                                                 BleDeviceType.RUNNING_MONITOR -> painterResource(R.drawable.ic_directions_run_24)
                                                 BleDeviceType.UNKNOWN -> painterResource(R.drawable.ic_bluetooth_scanning)
@@ -249,6 +273,7 @@ fun Context.manageBleService(action: ClientBleListContract.Effect) {
                 startService(intent)
             }
         }
+
         ClientBleListContract.Effect.StopScan -> {
             intent.action = BleForegroundService.ACTION_STOP_SCAN
             stopService(intent)

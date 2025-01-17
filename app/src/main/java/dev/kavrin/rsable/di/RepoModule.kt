@@ -3,6 +3,8 @@ package dev.kavrin.rsable.di
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
+import dev.kavrin.rsable.data.local.BleGattManager
+import dev.kavrin.rsable.data.local.BleGattManagerImpl
 import dev.kavrin.rsable.data.local.BleScanManager
 import dev.kavrin.rsable.data.local.BleScanManagerImpl
 import org.koin.dsl.bind
@@ -13,4 +15,5 @@ val repoModule = module {
         BluetoothAdapter::class
     )
     single { BleScanManagerImpl(bleAdapter = get()) }.bind(BleScanManager::class)
+    single { BleGattManagerImpl(context = get()) }.bind(BleGattManager::class)
 }
