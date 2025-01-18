@@ -21,6 +21,7 @@ interface BleListContract :
     sealed interface Effect {
         data object StartScan : Effect
         data object StopScan : Effect
+        data object NavigateBack : Effect
         data class NavigateToDetail(val bleDevice: BleDevice, val gattServices: List<GattService>) :
             Effect
     }
@@ -28,6 +29,7 @@ interface BleListContract :
     sealed interface Event {
         data object OnStartScan : Event
         data object OnStopScan : Event
+        data object OnNavigateBack : Event
         data class OnDeviceClicked(val bleDevice: BleDevice) : Event
         data object OnClearErrors : Event
         data class OnLocationStatusChange(val isEnable: Boolean) : Event

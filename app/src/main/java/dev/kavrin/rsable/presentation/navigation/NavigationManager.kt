@@ -85,18 +85,22 @@ fun NavigationManager(
                 }
 
                 BleListScreenRoot(
-                    viewModel = viewModel
-                ) { bleDevice, gattServices ->
-                    clientViewModel.onEvent(
-                        BleClientContract.Event.OnSelectedBleChange(
-                            bleDevice,
-                            gattServices
+                    viewModel = viewModel,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToDetail = { bleDevice, gattServices ->
+                        clientViewModel.onEvent(
+                            BleClientContract.Event.OnSelectedBleChange(
+                                bleDevice,
+                                gattServices
+                            )
                         )
-                    )
-                    navController.navigate(
-                        Route.ClientBleDetail
-                    )
-                }
+                        navController.navigate(
+                            Route.ClientBleDetail
+                        )
+                    }
+                )
             }
 
             composable<Route.ClientBleDetail>(
@@ -121,7 +125,10 @@ fun NavigationManager(
                 }
 
                 BleDetailScreenRoot(
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
                 )
             }
         }

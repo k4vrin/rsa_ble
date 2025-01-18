@@ -10,7 +10,7 @@ interface BleDetailContract :
         val isLoading: Boolean = false,
         val bleDevice: BleDevice? = null,
         val writeValue: String = "",
-        val notifValue: String = "",
+        val notifValues: List<Float> = emptyList(),
         val readValue: String = "",
     )
 
@@ -19,7 +19,7 @@ interface BleDetailContract :
     }
 
     sealed interface Event {
-        data class OnNavigateBack(val bleDevice: BleDevice) : Event
+        data object OnNavigateBack : Event
         data class OnSelectedBleChange(val bleDevice: BleDevice?) : Event
         data class OnWriteValueChange(val value: String) : Event
         data class OnNotifyClick(val uuid: String) : Event

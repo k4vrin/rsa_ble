@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.update
 import java.util.UUID
 
 class BleDetailViewModel(
-    private val bleRepository: BleRepository
+    private val bleRepository: BleRepository,
 ) : ViewModel(), BleDetailContract {
 
     private val _state = MutableStateFlow(BleDetailContract.State())
@@ -34,7 +34,11 @@ class BleDetailViewModel(
 
     override fun onEvent(event: BleDetailContract.Event) {
         when (event) {
-            is BleDetailContract.Event.OnNavigateBack -> TODO()
+            is BleDetailContract.Event.OnNavigateBack -> {
+                viewModelScope.safeLaunch {
+                    bleRepository.disconnectFromDevice()
+                }
+            }
             is BleDetailContract.Event.OnSelectedBleChange -> {
                 Log.d(TAG, "OnSelectedBleChange: ${event.bleDevice}")
                 _state.update { currState ->
@@ -53,20 +57,31 @@ class BleDetailViewModel(
                         .collect {
                             when (it) {
                                 is Resource.Error -> {
-                                    Log.d(TAG, "onEvent enableNotifyCharacteristic Error: ${it.cause}")
+                                    Log.d(
+                                        TAG,
+                                        "onEvent enableNotifyCharacteristic Error: ${it.cause}"
+                                    )
                                 }
+
                                 is Resource.Success -> {
-                                    Log.d(TAG, "onEvent enableNotifyCharacteristic Success: ${it.data}")
+                                    Log.d(
+                                        TAG,
+                                        "onEvent enableNotifyCharacteristic Success: ${it.data}"
+                                    )
                                     when (it.data) {
                                         is GattEvent.NotifyCharacteristic.Changed -> {
                                             _state.update { currState ->
-                                                currState.copy(notifValue = it.data.value.toHexString())
+                                                currState.copy(notifValues = currState.notifValues + it.data.value.map { hexValue ->
+                                                    hexValue.toInt().toFloat()
+                                                })
                                             }
 
                                         }
+
                                         is GattEvent.NotifyCharacteristic.Failure -> {
 
                                         }
+
                                         is GattEvent.NotifyCharacteristic.Success -> {
 
                                         }
@@ -76,6 +91,7 @@ class BleDetailViewModel(
                         }
                 }
             }
+
             is BleDetailContract.Event.OnReadClick -> {
                 viewModelScope.safeLaunch {
                     bleRepository.readCharacteristic(UUID.fromString(event.uuid))
@@ -84,8 +100,12 @@ class BleDetailViewModel(
                                 is Resource.Error -> {
                                     Log.d(TAG, "onEvent OnReadClick Error: ${it.cause}")
                                 }
+
                                 is Resource.Success -> {
-                                    Log.d(TAG, "onEvent OnReadClick Success: ${it.data.toHexString()}")
+                                    Log.d(
+                                        TAG,
+                                        "onEvent OnReadClick Success: ${it.data.toHexString()}"
+                                    )
                                     _state.update { currState ->
                                         currState.copy(
                                             readValue = it.data.toHexString()
@@ -97,6 +117,7 @@ class BleDetailViewModel(
                         }
                 }
             }
+
             is BleDetailContract.Event.OnWriteClick -> {
                 viewModelScope.safeLaunch {
                     bleRepository.writeCharacteristic(
@@ -108,6 +129,7 @@ class BleDetailViewModel(
                             is Resource.Error -> {
                                 Log.d(TAG, "onEvent OnWriteClick Error: ${it.cause}")
                             }
+
                             is Resource.Success -> {
                                 Log.d(TAG, "onEvent OnWriteClick Success")
 
@@ -116,6 +138,7 @@ class BleDetailViewModel(
                     }
                 }
             }
+
             is BleDetailContract.Event.OnWriteValueChange -> {
                 _state.update { currState ->
                     currState.copy(
@@ -131,9 +154,18 @@ class BleDetailViewModel(
         private const val TAG = "BleDetailViewModel"
 
         enum class HeartRateChar(val uuid: String, val operationType: CharacteristicProperty) {
-            HEART_RATE_MEASUREMENT_UUID("00002a37-0000-1000-8000-00805f9b34fb", CharacteristicProperty.NOTIFIABLE),
-            BODY_SENSOR_LOCATION_UUID("00002a38-0000-1000-8000-00805f9b34fb", CharacteristicProperty.READABLE),
-            HEART_RATE_CONTROL_POINT_UUID("00002a39-0000-1000-8000-00805f9b34fb", CharacteristicProperty.WRITABLE)
+            HEART_RATE_MEASUREMENT_UUID(
+                "00002a37-0000-1000-8000-00805f9b34fb",
+                CharacteristicProperty.NOTIFIABLE
+            ),
+            BODY_SENSOR_LOCATION_UUID(
+                "00002a38-0000-1000-8000-00805f9b34fb",
+                CharacteristicProperty.READABLE
+            ),
+            HEART_RATE_CONTROL_POINT_UUID(
+                "00002a39-0000-1000-8000-00805f9b34fb",
+                CharacteristicProperty.WRITABLE
+            )
         }
 
         enum class CharacteristicProperty {

@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -29,6 +31,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import dev.kavrin.rsable.R
 import dev.kavrin.rsable.presentation.screens.client.ble_list.BleListContract
+import dev.kavrin.rsable.presentation.screens.client.component.BackHandler
+import dev.kavrin.rsable.presentation.screens.client.component.HeartRateChartWithGrid
 import dev.kavrin.rsable.presentation.theme.DarkGreen
 import dev.kavrin.rsable.presentation.theme.Dimen
 import dev.kavrin.rsable.presentation.theme.RsLight
@@ -48,6 +52,7 @@ private const val TAG = "BleDetailScreen"
 fun BleDetailScreenRoot(
     modifier: Modifier = Modifier,
     viewModel: BleDetailViewModel = koinViewModel(),
+    onNavigateBack: () -> Unit
 ) {
 
     val (state, effect, dispatch) = use(viewModel)
@@ -55,8 +60,12 @@ fun BleDetailScreenRoot(
 
     effect.collectInLaunchedEffect { eff ->
         when (eff) {
-            BleDetailContract.Effect.NavigateBack -> {}
+            BleDetailContract.Effect.NavigateBack -> onNavigateBack()
         }
+    }
+
+    BackHandler {
+        dispatch(BleDetailContract.Event.OnNavigateBack)
     }
 
     BleDetailScreen(
@@ -84,8 +93,7 @@ fun BleDetailScreen(
             modifier = Modifier
                 .padding(vertical = MaterialTheme.padding.medium)
                 .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(MaterialTheme.padding.medium),
+                .weight(1.5f),
             colors = CardDefaults.cardColors(
                 containerColor = RsOrange,
                 contentColor = RsRed
@@ -94,7 +102,9 @@ fun BleDetailScreen(
         ) {
             Column (
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .padding(MaterialTheme.padding.extraMedium)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -236,7 +246,7 @@ fun BleDetailScreen(
                                         )
                                         HorizontalSpacer(MaterialTheme.padding.medium)
                                         Text(
-                                            text = state.notifValue,
+                                            text = state.notifValues.toString(),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = DarkGreen
                                         )
@@ -272,6 +282,15 @@ fun BleDetailScreen(
                 }
             }
         }
+
+        VerticalSpacer(MaterialTheme.padding.extraMedium)
+
+        HeartRateChartWithGrid(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            data = state.notifValues,
+        )
     }
 }
 

@@ -25,6 +25,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -61,6 +62,17 @@ class BleGattManagerImpl(
         onBufferOverflow = BufferOverflow.SUSPEND
     )
 
+
+    private val maxRetryCount = 3
+    private val retryDelay = 3.seconds
+
+    private val maxReconnectAttempts = 5
+    private val reconnectDelay = 5.seconds
+    private var isReconnecting = false
+    private var currentReconnectAttempts = 0
+    private var lastConnectedDevice: DiscoveredBleDevice? = null
+
+
     private val bluetoothGattMutex = Mutex()
     private var bluetoothGatt: BluetoothGatt? = null
     private val scope = CoroutineScope(
@@ -92,23 +104,115 @@ class BleGattManagerImpl(
         }
     }
 
+    private fun onDeviceDisconnected() {
+        // Launch the reconnection logic in a coroutine
+        scope.safeLaunch {
+            reconnectToDevice()
+        }
+    }
+
+    private suspend fun reconnectToDevice() {
+        if (isReconnecting) return
+
+        isReconnecting = true
+        while (currentReconnectAttempts < maxReconnectAttempts) {
+            currentReconnectAttempts++
+            logConnection(
+                level = Logger.Level.INFO,
+                status = "Reconnect",
+                message = "Attempting to reconnect (attempt $currentReconnectAttempts/$maxReconnectAttempts)..."
+            )
+
+            val result = try {
+                connectToDevice(lastConnectedDevice!!) // Assuming you store the last connected device
+            } catch (e: Exception) {
+                logConnection(
+                    level = Logger.Level.ERROR,
+                    status = "Reconnect",
+                    message = "Reconnection attempt failed: ${e.message}",
+                    cause = e
+                )
+                Resource.error(
+                    GattEvent.Error.ConnectionLost(message = "Reconnection failed: ${e.message}")
+                )
+            }
+
+            if (result is Resource.Success) {
+                logConnection(
+                    level = Logger.Level.INFO,
+                    status = "Reconnect",
+                    message = "Reconnection successful!"
+                )
+                return
+            }
+
+            delay(reconnectDelay.inWholeMilliseconds)
+        }
+
+        logConnection(
+            level = Logger.Level.ERROR,
+            status = "Reconnect",
+            message = "Failed to reconnect after $maxReconnectAttempts attempts."
+        )
+        isReconnecting = false
+    }
+
+
+
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             Resource.runCatching {
-                val event = when (newState) {
-                    BluetoothProfile.STATE_CONNECTED -> GattEvent.ConnectionState.Connected
-                    BluetoothProfile.STATE_DISCONNECTED -> GattEvent.ConnectionState.Disconnected
-                    BluetoothProfile.STATE_DISCONNECTING -> GattEvent.ConnectionState.Disconnecting
-                    else -> GattEvent.ConnectionState.Connecting
+                when (newState) {
+                    BluetoothProfile.STATE_CONNECTED -> {
+                        isReconnecting = false
+                        currentReconnectAttempts = 0
+                        logConnection(
+                            level = Logger.Level.INFO,
+                            status = "Connected",
+                            message = "Successfully connected to device."
+                        )
+                        scope.safeLaunch {
+                            _gattEvents.emit(success(GattEvent.ConnectionState.Connected))
+                        }
+                    }
+                    BluetoothProfile.STATE_DISCONNECTED -> {
+                        logConnection(
+                            level = Logger.Level.WARN,
+                            status = "Disconnected",
+                            message = "Device disconnected. Starting reconnection..."
+                        )
+                        if (currentReconnectAttempts >= maxReconnectAttempts) {
+                            scope.safeLaunch {
+                                _gattEvents.emit(success(GattEvent.ConnectionState.Disconnected))
+                            }
+                        } else {
+                            onDeviceDisconnected()
+                        }
+
+                    }
+                    BluetoothProfile.STATE_DISCONNECTING -> {
+                        logConnection(
+                            level = Logger.Level.INFO,
+                            status = "Disconnecting",
+                            message = "Connection state Disconnecting $newState"
+                        )
+                        scope.safeLaunch {
+                            _gattEvents.emit(success(GattEvent.ConnectionState.Disconnecting))
+                        }
+                    }
+                    else -> {
+
+                        scope.safeLaunch {
+                            _gattEvents.emit(success(GattEvent.ConnectionState.Connecting))
+                        }
+                    }
                 }
                 logConnection(
                     level = Logger.Level.INFO,
                     status = "Success",
                     message = "Connection state changed to $newState"
                 )
-                scope.safeLaunch {
-                    _gattEvents.emit(success(event))
-                }
+
             }.getOrElse { cause ->
                 logConnection(
                     level = Logger.Level.ERROR,
@@ -306,56 +410,81 @@ class BleGattManagerImpl(
     /*************BleGattManager*************/
 
     override suspend fun connectToDevice(discoveredBleDevice: DiscoveredBleDevice): Resource<GattEvent.ConnectionState, GattEvent.Error> {
-        try {
-            bluetoothGatt = discoveredBleDevice.device.connectGatt(context, false, gattCallback)
-
-            if (bluetoothGatt == null) {
-                logConnection(
-                    level = Logger.Level.ERROR,
-                    status = "Failed",
-                    message = "Failed to connect to device ${discoveredBleDevice.device.name}"
-                )
-                return Resource.error(
-                    GattEvent.Error.ConnectionLost(
-                        message = "Failed to connect to device ${discoveredBleDevice.device.name}"
-                    )
-                )
-            }
-
-            return handleConnectionGattEvents()
-                .also {
-                    when (it) {
-                        is Resource.Error -> {
-                            logConnection(
-                                level = Logger.Level.ERROR,
-                                status = "Failed",
-                                message = "Exception during connection: ${it.cause?.message}",
+        return retryWithDelay(
+            action = {
+                try {
+                    bluetoothGatt = discoveredBleDevice.device.connectGatt(context, false, gattCallback)
+                    if (bluetoothGatt == null) {
+                        logConnection(
+                            level = Logger.Level.ERROR,
+                            status = "Failed",
+                            message = "Failed to connect to device ${discoveredBleDevice.device.name}"
+                        )
+                        return@retryWithDelay Resource.error(
+                            GattEvent.Error.ConnectionLost(
+                                message = "Failed to connect to device ${discoveredBleDevice.device.name}"
                             )
-                        }
+                        )
+                    }
 
-                        is Resource.Success -> {
-                            logConnection(
-                                level = Logger.Level.INFO,
-                                status = "Info",
-                                message = "Connection result: ${it.data}"
-                            )
+                    handleConnectionGattEvents().also {
+                        if (it is Resource.Success && it.data is GattEvent.ConnectionState.Connected) {
+                            lastConnectedDevice = discoveredBleDevice
                         }
                     }
+                } catch (e: Exception) {
+                    coroutineContext.ensureActive()
+                    logConnection(
+                        level = Logger.Level.ERROR,
+                        status = "Failed",
+                        message = "Exception during connection: ${e.message}",
+                        cause = e
+                    )
+                    Resource.error(
+                        GattEvent.Error.ConnectionLost(message = "Exception during connection: ${e.message}")
+                    )
                 }
-
-        } catch (e: Exception) {
-            coroutineContext.ensureActive()
-            logConnection(
-                level = Logger.Level.ERROR,
-                status = "Failed",
-                message = "Exception during connection: ${e.message}",
-                cause = e
-            )
-            return Resource.error(
-                GattEvent.Error.ConnectionLost(message = "Exception during connection: ${e.message}")
-            )
+            },
+            maxRetries = maxRetryCount,
+            delayDuration = retryDelay
+        ).also { result ->
+            when (result) {
+                is Resource.Error -> logConnection(
+                    level = Logger.Level.ERROR,
+                    status = "Failed",
+                    message = "Final connection attempt failed: ${result.cause?.message}"
+                )
+                is Resource.Success -> logConnection(
+                    level = Logger.Level.INFO,
+                    status = "Success",
+                    message = "Connected to device: ${result.data}"
+                )
+            }
         }
     }
+
+
+    private suspend fun retryWithDelay(
+        action: suspend () -> Resource<GattEvent.ConnectionState, GattEvent.Error>,
+        maxRetries: Int,
+        delayDuration: kotlin.time.Duration
+    ): Resource<GattEvent.ConnectionState, GattEvent.Error> {
+        var attempt = 0
+        var result: Resource<GattEvent.ConnectionState, GattEvent.Error>
+        while (true) {
+            result = action()
+            if ((result is Resource.Success && result.data is GattEvent.ConnectionState.Connected) || attempt >= maxRetries) break
+            attempt++
+            logConnection(
+                level = Logger.Level.WARN,
+                status = "Retry",
+                message = "Retrying connection attempt #$attempt"
+            )
+            delay(delayDuration.inWholeMilliseconds)
+        }
+        return result
+    }
+
 
     private suspend fun handleConnectionGattEvents(): Resource<GattEvent.ConnectionState, GattEvent.Error> {
         return withTimeoutOrNull(5.seconds) { // Timeout after 5 seconds

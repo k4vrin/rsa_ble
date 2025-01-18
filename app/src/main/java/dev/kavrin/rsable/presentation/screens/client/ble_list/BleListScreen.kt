@@ -58,6 +58,7 @@ import dev.kavrin.rsable.R
 import dev.kavrin.rsable.domain.model.BleDevice
 import dev.kavrin.rsable.domain.model.BleDeviceType
 import dev.kavrin.rsable.domain.model.GattService
+import dev.kavrin.rsable.presentation.screens.client.component.BackHandler
 import dev.kavrin.rsable.presentation.service.BleForegroundService
 import dev.kavrin.rsable.presentation.theme.DarkGreen
 import dev.kavrin.rsable.presentation.theme.RsLight
@@ -85,6 +86,7 @@ fun BleListScreenRoot(
     modifier: Modifier = Modifier,
     viewModel: BleListViewModel = koinViewModel(),
     onNavigateToDetail: (BleDevice, List<GattService>) -> Unit,
+    onNavigateBack: () -> Unit
 ) {
 
     val (state, effect, dispatch) = use(viewModel)
@@ -111,17 +113,20 @@ fun BleListScreenRoot(
 
             is BleListContract.Effect.NavigateToDetail -> {
                 Log.d(TAG, "NavigateToDetail")
+                dispatch(BleListContract.Event.OnStopScan)
+                context.manageBleService(BleListContract.Effect.StopScan)
                 onNavigateToDetail(eff.bleDevice, eff.gattServices)
             }
+
+            BleListContract.Effect.NavigateBack -> onNavigateBack()
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            Log.d(TAG, "ClientBleListScreen onDispose: ")
-            dispatch(BleListContract.Event.OnStopScan)
-            context.manageBleService(BleListContract.Effect.StopScan)
-        }
+    BackHandler {
+        Log.d(TAG, "ClientBleListScreen onDispose: ")
+        dispatch(BleListContract.Event.OnStopScan)
+        context.manageBleService(BleListContract.Effect.StopScan)
+        dispatch(BleListContract.Event.OnNavigateBack)
     }
 
     BleListScreen(
@@ -456,6 +461,11 @@ fun Context.manageBleService(action: BleListContract.Effect) {
         }
 
         is BleListContract.Effect.NavigateToDetail -> {
+            intent.action = BleForegroundService.ACTION_STOP_SCAN
+            stopService(intent)
+        }
+
+        BleListContract.Effect.NavigateBack -> {
             intent.action = BleForegroundService.ACTION_STOP_SCAN
             stopService(intent)
         }

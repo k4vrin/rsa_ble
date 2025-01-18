@@ -140,6 +140,12 @@ class BleListViewModel(
                     }
                 }
             }
+
+            BleListContract.Event.OnNavigateBack -> {
+                viewModelScope.safeLaunch {
+                    effectChannel.send(BleListContract.Effect.NavigateBack)
+                }
+            }
         }
     }
 
