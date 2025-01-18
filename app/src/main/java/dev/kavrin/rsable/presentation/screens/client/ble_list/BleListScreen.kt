@@ -1,4 +1,4 @@
-package dev.kavrin.rsable.presentation.screens.ble_list
+package dev.kavrin.rsable.presentation.screens.client.ble_list
 
 import android.content.Context
 import android.content.Intent
@@ -6,9 +6,9 @@ import android.os.Build
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,34 +16,41 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import dev.kavrin.rsable.R
+import dev.kavrin.rsable.domain.model.BleDevice
 import dev.kavrin.rsable.domain.model.BleDeviceType
+import dev.kavrin.rsable.domain.model.GattService
 import dev.kavrin.rsable.presentation.service.BleForegroundService
 import dev.kavrin.rsable.presentation.theme.DarkGreen
+import dev.kavrin.rsable.presentation.theme.RsLight
 import dev.kavrin.rsable.presentation.theme.RsOrange
 import dev.kavrin.rsable.presentation.theme.RsPink
 import dev.kavrin.rsable.presentation.theme.RsRed
@@ -58,9 +65,10 @@ import org.koin.androidx.compose.koinViewModel
 private const val TAG = "ClientBleListScreen"
 
 @Composable
-fun ClientBleListScreenRoot(
+fun BleListScreenRoot(
     modifier: Modifier = Modifier,
-    viewModel: ClientBleListViewModel = koinViewModel(),
+    viewModel: BleListViewModel = koinViewModel(),
+    onNavigateToDetail: (BleDevice, List<GattService>) -> Unit,
 ) {
 
     val (state, effect, dispatch) = use(viewModel)
@@ -68,14 +76,19 @@ fun ClientBleListScreenRoot(
 
     effect.collectInLaunchedEffect { eff ->
         when (eff) {
-            ClientBleListContract.Effect.StartScan -> {
+            BleListContract.Effect.StartScan -> {
                 Log.d(TAG, "ClientBleListScreenRoot:StartScan ")
                 context.manageBleService(eff)
             }
 
-            ClientBleListContract.Effect.StopScan -> {
+            BleListContract.Effect.StopScan -> {
                 Log.d(TAG, "stop scan: $eff ")
                 context.manageBleService(eff)
+            }
+
+            is BleListContract.Effect.NavigateToDetail -> {
+                Log.d(TAG, "NavigateToDetail")
+                onNavigateToDetail(eff.bleDevice, eff.gattServices)
             }
         }
     }
@@ -83,40 +96,32 @@ fun ClientBleListScreenRoot(
     DisposableEffect(Unit) {
         onDispose {
             Log.d(TAG, "ClientBleListScreen onDispose: ")
-            dispatch(ClientBleListContract.Event.OnStopScan)
-            context.manageBleService(ClientBleListContract.Effect.StopScan)
+            dispatch(BleListContract.Event.OnStopScan)
+            context.manageBleService(BleListContract.Effect.StopScan)
         }
     }
 
-    Box {
-        ClientBleListScreen(
-            modifier = modifier,
-            state = state,
-            dispatch = dispatch
-        )
-
-        AnimatedVisibility(state.isLoading) {
-            ElevatedCard {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-        }
-    }
+    BleListScreen(
+        modifier = modifier,
+        state = state,
+        dispatch = dispatch
+    )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ClientBleListScreen(
+fun BleListScreen(
     modifier: Modifier = Modifier,
-    state: ClientBleListContract.State,
-    dispatch: (ClientBleListContract.Event) -> Unit,
+    state: BleListContract.State,
+    dispatch: (BleListContract.Event) -> Unit,
 ) {
 
     LaunchedEffect(Unit) {
-        dispatch(ClientBleListContract.Event.OnStartScan)
+        dispatch(BleListContract.Event.OnStartScan)
+    }
+
+    var scanIcon by remember(state.isScanning) {
+        mutableStateOf(if (state.isScanning) R.drawable.baseline_stop_circle_24 else R.drawable.baseline_play_circle_24)
     }
 
     Box(
@@ -134,19 +139,91 @@ fun ClientBleListScreen(
                 .padding(top = MaterialTheme.padding.medium),
         ) {
 
+            stickyHeader {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = MaterialTheme.padding.medium)
+                        .animateItem(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = RsOrange,
+                        contentColor = RsRed
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = MaterialTheme.padding.extraSmall)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(MaterialTheme.padding.medium),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "BLE Devices",
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+
+                        AnimatedContent(
+                            targetState = scanIcon
+                        ) {
+                            IconButton(
+                                modifier = Modifier
+                                    .size(60.dp),
+                                onClick = {
+                                    if (state.isScanning) {
+                                        dispatch(BleListContract.Event.OnStopScan)
+                                    } else {
+                                        dispatch(BleListContract.Event.OnStartScan)
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    modifier = Modifier,
+                                    painter = painterResource(it),
+                                    contentDescription = ""
+                                )
+                            }
+                        }
+                    }
+                }
+
+            }
+
             items(
                 items = state.bleDevices.values.toList(),
                 key = { it.macAddress.value }
-            ) {
+            ) { bleDevice ->
 
                 Box(
                     modifier = Modifier
-                        .clickable { dispatch(ClientBleListContract.Event.OnDeviceClicked(it)) }
+                        .fillMaxSize()
                 ) {
 
                     Card(
                         modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .zIndex(99f),
+                        elevation = CardDefaults.cardElevation(defaultElevation = MaterialTheme.padding.extraSmall),
+                        colors = CardDefaults.cardColors(containerColor = RsRed)
+                    ) {
+                        AnimatedContent(
+                            targetState = bleDevice.rssi,
+                            label = "RSSI"
+                        ) { rssi ->
+                            Text(
+                                modifier = Modifier
+                                    .padding(MaterialTheme.padding.extraSmall),
+                                text = "${rssi}dBm",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = DarkGreen
+                            )
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier
                             .fillMaxWidth()
+                            .height(170.dp)
                             .padding(vertical = MaterialTheme.padding.medium)
                             .animateItem(),
                         elevation = CardDefaults.cardElevation(defaultElevation = MaterialTheme.padding.extraSmall)
@@ -155,12 +232,17 @@ fun ClientBleListScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(RsOrange)
-                                .padding(MaterialTheme.padding.small)
+                                .padding(
+                                    vertical = MaterialTheme.padding.medium,
+                                    horizontal = MaterialTheme.padding.small
+                                )
                         ) {
 
 
                             Row(
-                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                horizontalArrangement = Arrangement.Start,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
 
@@ -187,7 +269,7 @@ fun ClientBleListScreen(
                                         Icon(
                                             modifier = Modifier
                                                 .size(40.dp),
-                                            painter = when (it.bleDeviceType) {
+                                            painter = when (bleDevice.type) {
                                                 BleDeviceType.HEART_RATE_MONITOR -> painterResource(
                                                     R.drawable.ic_monitor_heart_24
                                                 )
@@ -209,12 +291,12 @@ fun ClientBleListScreen(
 
                                 HorizontalSpacer(MaterialTheme.padding.small)
 
-                                Column(
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
+
+
+                                Column {
                                     // Device name row
                                     Text(
-                                        text = it.name ?: "Unknown",
+                                        text = bleDevice.name ?: "N/A",
                                         style = MaterialTheme.typography.titleMedium,
                                         color = DarkGreen
                                     )
@@ -223,37 +305,61 @@ fun ClientBleListScreen(
 
                                     // MAC address
                                     Text(
-                                        text = it.macAddress.value,
+                                        text = bleDevice.macAddress.value,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = DarkGreen.copy(alpha = 0.7f)
                                     )
                                 }
+
+                                if (bleDevice.isConnectable) {
+                                    HorizontalSpacer(MaterialTheme.padding.large)
+                                    Button(
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = DarkGreen,
+                                            contentColor = RsLight
+                                        ),
+                                        shape = CircleShape,
+                                        onClick = {
+                                            dispatch(
+                                                BleListContract.Event.OnDeviceClicked(
+                                                    bleDevice
+                                                )
+                                            )
+                                        }
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.baseline_bluetooth_connected_24),
+                                            tint = RsLight,
+                                            contentDescription = ""
+                                        )
+                                    }
+                                }
+
                             }
                         }
                     }
 
-                    Card(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd),
-                        elevation = CardDefaults.cardElevation(defaultElevation = MaterialTheme.padding.extraSmall),
-                        colors = CardDefaults.cardColors(containerColor = RsRed)
-                    ) {
-                        AnimatedContent(
-                            targetState = it.rssi,
-                            label = "RSSI"
-                        ) { rssi ->
-                            Text(
-                                modifier = Modifier
-                                    .padding(MaterialTheme.padding.extraSmall),
-                                text = "${rssi}dBm",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = DarkGreen
-                            )
-                        }
-                    }
+
                 }
             }
 
+        }
+
+        AnimatedVisibility(
+            modifier = Modifier
+                .size(60.dp)
+                .align(Alignment.Center),
+            visible = state.isLoading
+        ) {
+            ElevatedCard {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
         }
 
     }
@@ -261,11 +367,11 @@ fun ClientBleListScreen(
 }
 
 
-fun Context.manageBleService(action: ClientBleListContract.Effect) {
+fun Context.manageBleService(action: BleListContract.Effect) {
     val intent = Intent(this, BleForegroundService::class.java)
-
+    Log.d(TAG, "manageBleService: $intent, $action")
     when (action) {
-        ClientBleListContract.Effect.StartScan -> {
+        BleListContract.Effect.StartScan -> {
             intent.action = BleForegroundService.ACTION_START_SCAN
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(intent)
@@ -274,7 +380,12 @@ fun Context.manageBleService(action: ClientBleListContract.Effect) {
             }
         }
 
-        ClientBleListContract.Effect.StopScan -> {
+        BleListContract.Effect.StopScan -> {
+            intent.action = BleForegroundService.ACTION_STOP_SCAN
+            stopService(intent)
+        }
+
+        is BleListContract.Effect.NavigateToDetail -> {
             intent.action = BleForegroundService.ACTION_STOP_SCAN
             stopService(intent)
         }

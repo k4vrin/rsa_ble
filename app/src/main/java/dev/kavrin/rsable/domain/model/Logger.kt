@@ -20,7 +20,7 @@ object Logger {
         message: String,
         cause: Throwable? = null
     ) {
-        if (!isDebugBuild) return // Do not log in release builds
+//        if (!isDebugBuild) return // Do not log in release builds
 
         val timestamp = System.currentTimeMillis().toFormattedTimestamp()
         val uuidStr = uuid?.toString() ?: "N/A"

@@ -4,7 +4,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
@@ -12,7 +11,6 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import dev.kavrin.rsable.R
-import dev.kavrin.rsable.data.dto.DiscoveredBleDevice
 import dev.kavrin.rsable.data.local.BleScanManager
 import dev.kavrin.rsable.domain.model.BleDeviceType
 import dev.kavrin.rsable.domain.model.BleScanResource
@@ -20,9 +18,6 @@ import dev.kavrin.rsable.util.safeLaunch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import org.koin.android.ext.android.inject
 
 class BleForegroundService : Service() {
@@ -104,9 +99,8 @@ class BleForegroundService : Service() {
                 .collect { scanResource ->
                     Log.d(TAG, "observeScanResults: $scanResource")
                     if (scanResource is BleScanResource.Success) {
-                        for (scanResult in scanResource.value) {
-                            val device = scanResult.toBleDevice()
-                            when (device.bleDeviceType) {
+                        for (bleDevice in scanResource.value) {
+                            when (bleDevice.type) {
                                 BleDeviceType.HEART_RATE_MONITOR -> {
                                     notifyUser("Target device found", "A heart rate monitor found.")
                                 }

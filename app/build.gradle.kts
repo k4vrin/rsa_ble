@@ -7,6 +7,16 @@ plugins {
 }
 
 android {
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("..\\app\\key\\rsa.jks")
+            storePassword = "rsa1403"
+            keyPassword = "rsa1403"
+            keyAlias = "key0"
+        }
+    }
+
     namespace = "dev.kavrin.rsable"
     compileSdk = 35
 
@@ -18,15 +28,18 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled = true
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -61,7 +74,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    debugImplementation(libs.androidx.navigation)
+    implementation(libs.androidx.navigation)
 
     implementation(libs.koin.core)
     implementation(libs.koin.android)

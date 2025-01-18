@@ -8,6 +8,7 @@ import android.util.Log
 import dev.kavrin.rsable.data.util.ScanRecordParser
 import dev.kavrin.rsable.domain.model.BleDevice
 import dev.kavrin.rsable.domain.model.BleDeviceType
+import dev.kavrin.rsable.domain.model.Logger
 import dev.kavrin.rsable.domain.model.MacAddress
 import kotlinx.parcelize.Parcelize
 
@@ -89,7 +90,6 @@ data class DiscoveredBleDevice(
 
         val deviceName = scanRecord?.deviceName?.takeIf { it.isNotBlank() }
             ?: device.name?.takeIf { it.isNotBlank() }
-            ?: macAddress().value
 
         return BleDevice(
             macAddress = macAddress(),
@@ -97,8 +97,17 @@ data class DiscoveredBleDevice(
             rssi = rssi,
             previousRssi = previousRssi,
             highestRssi = highestRssi,
-            bleDeviceType = bleDeviceType
-        )
+            type = bleDeviceType,
+            isConnectable = scanResult?.isConnectable == true
+        ).also {
+            Logger.log(
+                level = Logger.Level.DEBUG,
+                module = "ScanResult",
+                operation = "Scan",
+                status = "Scanned",
+                message = "Scanned device: $it",
+            )
+        }
     }
 
     companion object {

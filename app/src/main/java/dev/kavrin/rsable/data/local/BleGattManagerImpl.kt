@@ -6,11 +6,11 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothProfile
 import android.content.Context
 import android.os.Build
-import androidx.activity.result.launch
 import dev.kavrin.rsable.data.dto.DiscoveredBleDevice
 import dev.kavrin.rsable.domain.model.GattCharacteristic
 import dev.kavrin.rsable.domain.model.GattEvent
@@ -26,21 +26,20 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 import kotlin.coroutines.coroutineContext
-import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.seconds
 
 @SuppressLint("MissingPermission")
@@ -81,8 +80,10 @@ class BleGattManagerImpl(
                     is Resource.Error -> Unit
                     is Resource.Success -> {
                         if (it.data is GattEvent.ConnectionState.Connected) {
+
                             runCatching {
                                 bluetoothGatt?.requestMtu(517)
+                                bluetoothGatt?.discoverServices()
                             }.getOrNull()
                         }
                     }
@@ -266,7 +267,7 @@ class BleGattManagerImpl(
             value: ByteArray,
         ) {
             Resource.runCatching {
-                val event = GattEvent.CharacteristicNotification(
+                val event = GattEvent.NotifyCharacteristic.Changed(
                     characteristic.toGattCharacteristic(),
                     value
                 )
@@ -320,12 +321,6 @@ class BleGattManagerImpl(
                     )
                 )
             }
-
-            logConnection(
-                level = Logger.Level.INFO,
-                status = "Info",
-                message = "Connected to device ${discoveredBleDevice.device.name}"
-            )
 
             return handleConnectionGattEvents()
                 .also {
@@ -444,7 +439,7 @@ class BleGattManagerImpl(
     ): Resource<ByteArray, GattEvent.Error> {
         return withTimeoutOrNull(5.seconds) {
             _gattEvents.firstOrNull {
-                it is Resource.Success && it.data is GattEvent.ReadCharacteristic && it.data.gattCharacteristic.uuid == characteristicUuid
+                it is Resource.Success && it.data is GattEvent.ReadCharacteristic && it.data.gattCharacteristic.uuid == characteristicUuid.toString()
             }?.let { res ->
                 when (res) {
                     is Resource.Error -> res
@@ -532,9 +527,9 @@ class BleGattManagerImpl(
     private suspend fun handleWriteGattEvent(
         characteristicUuid: UUID,
     ): Resource<Unit, GattEvent.Error> {
-        return withTimeoutOrNull(5.seconds) {
+        return withTimeoutOrNull(10.seconds) {
             _gattEvents.firstOrNull {
-                it is Resource.Success && it.data is GattEvent.WriteCharacteristic && it.data.gattCharacteristic.uuid == characteristicUuid
+                it is Resource.Success && it.data is GattEvent.WriteCharacteristic && it.data.gattCharacteristic.uuid == characteristicUuid.toString()
             }?.let { res ->
                 when (res) {
                     is Resource.Error -> res
@@ -584,6 +579,34 @@ class BleGattManagerImpl(
         )
     }
 
+    override suspend fun enableNotifyCharacteristic(characteristicUuid: UUID): Flow<Resource<GattEvent.NotifyCharacteristic, GattEvent.Error>> {
+        operationQueue.send(BleOperation.Notify(characteristicUuid))
+        logRead(
+            characteristicUuid,
+            Logger.Level.INFO,
+            "RequestSent",
+            "Characteristic enable notify request $characteristicUuid send"
+        )
+
+        return handleNotifyGattEvent(characteristicUuid)
+    }
+
+    private fun handleNotifyGattEvent(
+        characteristicUuid: UUID,
+    ): Flow<Resource<GattEvent.NotifyCharacteristic, GattEvent.Error>> {
+        return _gattEvents.filter {
+            it is Resource.Error || (it is Resource.Success && it.data is GattEvent.NotifyCharacteristic && it.data.gattCharacteristic.uuid == characteristicUuid.toString())
+        }
+            .map { res ->
+                when (res) {
+                    is Resource.Error -> Resource.Error(res.cause)
+                    is Resource.Success -> {
+                        Resource.Success((res.data as GattEvent.NotifyCharacteristic))
+                    }
+                }
+            }
+    }
+
 
     private suspend fun processOperations() {
 
@@ -600,6 +623,8 @@ class BleGattManagerImpl(
                             operation.value,
                             operation.writeType
                         )
+
+                        is BleOperation.Notify -> executeNotify(operation.uuid)
                     }
                 }
             }
@@ -624,6 +649,67 @@ class BleGattManagerImpl(
         }
     }
 
+    private suspend fun executeNotify(uuid: UUID) {
+        bluetoothGatt?.let { gatt ->
+            val characteristic = findCharacteristic(uuid)
+            if (characteristic != null) {
+                gatt.setCharacteristicNotification(characteristic, true)
+                    .let {
+                        if (!it) {
+                            logRead(
+                                characteristic.uuid,
+                                Logger.Level.INFO,
+                                "notifyFailed",
+                                "Characteristic notify request failed"
+                            )
+                            _gattEvents.emit(
+                                Resource.success(
+                                    GattEvent.NotifyCharacteristic.Failure(
+                                        GattCharacteristic(
+                                            characteristic.uuid.toString(),
+                                        ),
+                                        reason = "executeNotify for $uuid failed"
+                                    )
+                                )
+                            )
+                            return
+                        }
+                    }
+
+                val descriptor =
+                    characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))
+                if (descriptor != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        gatt.writeDescriptor(
+                            descriptor,
+                            BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                        )
+                    } else {
+                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                        gatt.writeDescriptor(descriptor)
+                    }
+                } else {
+                    logRead(
+                        characteristic.uuid,
+                        Logger.Level.INFO,
+                        "notifyFailed",
+                        "Failed to write descriptor"
+                    )
+                }
+
+            } else {
+                _gattEvents.emit(
+                    Resource.success(
+                        GattEvent.NotifyCharacteristic.Failure(
+                            gattCharacteristic = GattCharacteristic(uuid.toString()),
+                            reason = "executeNotify for $uuid failed"
+                        )
+                    )
+                )
+            }
+        }
+    }
+
     private suspend fun executeRead(uuid: UUID) {
         bluetoothGatt?.let { gatt ->
             val characteristic = findCharacteristic(uuid)
@@ -633,7 +719,7 @@ class BleGattManagerImpl(
                 _gattEvents.emit(
                     Resource.success(
                         GattEvent.ReadCharacteristic.Failure(
-                            gattCharacteristic = GattCharacteristic(uuid),
+                            gattCharacteristic = GattCharacteristic(uuid.toString()),
                             reason = "executeRead for $uuid failed"
                         )
                     )
@@ -650,6 +736,35 @@ class BleGattManagerImpl(
         bluetoothGatt?.let { gatt ->
             val characteristic = findCharacteristic(uuid)
             if (characteristic != null) {
+                if (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0) {
+                    // Characteristic supports write with response
+                    logWrite(
+                        characteristic.uuid,
+                        Logger.Level.INFO,
+                        "Property",
+                        "Characteristic property PROPERTY_WRITE"
+                    )
+                }
+                if (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0) {
+                    logWrite(
+                        characteristic.uuid,
+                        Logger.Level.INFO,
+                        "Property",
+                        "Characteristic property PROPERTY_WRITE_NO_RESPONSE"
+                    )
+                }
+
+                if (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE != 0) {
+                    logWrite(
+                        characteristic.uuid,
+                        Logger.Level.INFO,
+                        "Property",
+                        "Characteristic property PROPERTY_SIGNED_WRITE"
+                    )
+                }
+                BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     gatt.writeCharacteristic(characteristic, value, writeTypeInt)
                 } else {
@@ -661,7 +776,7 @@ class BleGattManagerImpl(
                 _gattEvents.emit(
                     Resource.success(
                         GattEvent.WriteCharacteristic.Failure(
-                            gattCharacteristic = GattCharacteristic(uuid),
+                            gattCharacteristic = GattCharacteristic(uuid.toString()),
                             reason = "executeWrite for $uuid failed"
                         )
                     )
@@ -675,6 +790,7 @@ class BleGattManagerImpl(
     }
 
     sealed class BleOperation {
+        data class Notify(val uuid: UUID) : BleOperation()
         data class Read(val uuid: UUID) : BleOperation()
         data class Write(val uuid: UUID, val value: ByteArray, val writeType: WriteType) :
             BleOperation() {
@@ -705,13 +821,13 @@ class BleGattManagerImpl(
 
         fun BluetoothGattCharacteristic.toGattCharacteristic(): GattCharacteristic {
             return GattCharacteristic(
-                uuid = this.uuid
+                uuid = this.uuid.toString()
             )
         }
 
         fun BluetoothGattService.toGattService(): GattService {
             return GattService(
-                uuid = this.uuid,
+                uuid = this.uuid.toString(),
                 gattCharacteristics = this.characteristics.map { it.toGattCharacteristic() }
             )
         }

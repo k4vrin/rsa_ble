@@ -15,10 +15,25 @@ sealed interface GattEvent {
     data class ServiceDiscovered(val services: List<GattService>) : GattEvent
 
     // Characteristic events
-    data class CharacteristicNotification(
-        val gattCharacteristic: GattCharacteristic,
-        val value: ByteArray,
-    ) : GattEvent
+
+
+    sealed interface NotifyCharacteristic : GattEvent {
+        val gattCharacteristic: GattCharacteristic
+
+        data class Success(
+            override val gattCharacteristic: GattCharacteristic,
+        ) : NotifyCharacteristic
+
+        data class Changed(
+            override val gattCharacteristic: GattCharacteristic,
+            val value: ByteArray
+        ) : NotifyCharacteristic
+
+        data class Failure(
+            override val gattCharacteristic: GattCharacteristic,
+            val reason: String,
+        ) : NotifyCharacteristic
+    }
 
     sealed interface ReadCharacteristic : GattEvent {
         val gattCharacteristic: GattCharacteristic
@@ -70,8 +85,8 @@ sealed interface GattEvent {
     }
 }
 
-data class GattService(val uuid: UUID, val gattCharacteristics: List<GattCharacteristic>)
-data class GattCharacteristic(val uuid: UUID)
+data class GattService(val uuid: String, val gattCharacteristics: List<GattCharacteristic>)
+data class GattCharacteristic(val uuid: String)
 
 enum class ConnectionFailureReason {
     TIMEOUT,

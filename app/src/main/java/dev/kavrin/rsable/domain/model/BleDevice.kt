@@ -6,5 +6,7 @@ data class BleDevice(
     val rssi: Int,
     val previousRssi: Int,
     val highestRssi: Int,
-    val bleDeviceType: BleDeviceType
+    val type: BleDeviceType,
+    val isConnectable: Boolean,
+    val services: List<GattService> = emptyList()
 )
