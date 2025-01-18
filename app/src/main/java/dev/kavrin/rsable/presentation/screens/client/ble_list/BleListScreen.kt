@@ -1,11 +1,16 @@
 package dev.kavrin.rsable.presentation.screens.client.ble_list
 
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
+import android.location.LocationManager
 import android.os.Build
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -34,16 +40,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.core.location.LocationManagerCompat.isLocationEnabled
 import dev.kavrin.rsable.R
 import dev.kavrin.rsable.domain.model.BleDevice
 import dev.kavrin.rsable.domain.model.BleDeviceType
@@ -59,11 +69,17 @@ import dev.kavrin.rsable.presentation.theme.padding
 import dev.kavrin.rsable.presentation.util.HorizontalSpacer
 import dev.kavrin.rsable.presentation.util.VerticalSpacer
 import dev.kavrin.rsable.presentation.util.collectInLaunchedEffect
+import dev.kavrin.rsable.presentation.util.isBluetoothEnabled
+import dev.kavrin.rsable.presentation.util.isLocationEnabled
+import dev.kavrin.rsable.presentation.util.observeLocationState
 import dev.kavrin.rsable.presentation.util.use
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
+import kotlin.time.Duration.Companion.seconds
 
 private const val TAG = "ClientBleListScreen"
 
+@SuppressLint("MissingPermission")
 @Composable
 fun BleListScreenRoot(
     modifier: Modifier = Modifier,
@@ -77,8 +93,15 @@ fun BleListScreenRoot(
     effect.collectInLaunchedEffect { eff ->
         when (eff) {
             BleListContract.Effect.StartScan -> {
+                val isBlEnable = context.getSystemService(BluetoothManager::class.java).adapter.isEnabled
+                val isLocationEnabled = context.isLocationEnabled()
                 Log.d(TAG, "ClientBleListScreenRoot:StartScan ")
-                context.manageBleService(eff)
+                if (isBlEnable && isLocationEnabled) {
+                    context.manageBleService(eff)
+                } else {
+                    dispatch(BleListContract.Event.OnBluetoothStatusChange(isBlEnable))
+                    dispatch(BleListContract.Event.OnLocationStatusChange(isLocationEnabled))
+                }
             }
 
             BleListContract.Effect.StopScan -> {
@@ -108,6 +131,7 @@ fun BleListScreenRoot(
     )
 }
 
+@SuppressLint("MissingPermission")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BleListScreen(
@@ -116,9 +140,23 @@ fun BleListScreen(
     dispatch: (BleListContract.Event) -> Unit,
 ) {
 
+    val currentError = remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+
+    LaunchedEffect(state.errors) {
+        for (err in state.errors) {
+            currentError.value = err
+            delay(2.seconds)
+            currentError.value = null
+            delay(500)
+        }
+        dispatch(BleListContract.Event.OnClearErrors)
+    }
+
     LaunchedEffect(Unit) {
         dispatch(BleListContract.Event.OnStartScan)
     }
+
 
     var scanIcon by remember(state.isScanning) {
         mutableStateOf(if (state.isScanning) R.drawable.baseline_stop_circle_24 else R.drawable.baseline_play_circle_24)
@@ -132,6 +170,30 @@ fun BleListScreen(
             )
             .padding(MaterialTheme.padding.medium)
     ) {
+
+        AnimatedVisibility(
+            modifier = Modifier
+                .zIndex(999f),
+            visible = currentError.value != null,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            currentError.value?.let { error ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .background(Color.Red, shape = RoundedCornerShape(8.dp))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = error,
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
 
         LazyColumn(
             modifier = Modifier
@@ -347,17 +409,25 @@ fun BleListScreen(
 
         AnimatedVisibility(
             modifier = Modifier
-                .size(60.dp)
                 .align(Alignment.Center),
             visible = state.isLoading
         ) {
-            ElevatedCard {
-                Box(
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                ElevatedCard(
                     modifier = Modifier
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                        .size(60.dp)
                 ) {
-                    CircularProgressIndicator()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
             }
         }

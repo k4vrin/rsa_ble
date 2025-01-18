@@ -77,7 +77,10 @@ class BleListViewModel(
                                 when (res) {
                                     is Resource.Error -> {
                                         _state.update { currState ->
-                                            currState.copy(isLoading = false)
+                                            currState.copy(
+                                                isLoading = false,
+                                                errors = currState.errors + res.cause?.message
+                                            )
                                         }
                                     }
 
@@ -103,6 +106,40 @@ class BleListViewModel(
                     }
                 }
             }
+
+            BleListContract.Event.OnClearErrors -> {
+                Log.d(TAG, "onEvent clear errors")
+                _state.update { currState ->
+                    currState.copy(
+                        errors = emptyList()
+                    )
+                }
+
+            }
+
+            is BleListContract.Event.OnBluetoothStatusChange -> {
+                if (!event.isEnable) {
+                    _state.update { currState ->
+                        currState.copy(
+                            isLoading = false,
+                            isScanning = false,
+                            errors = currState.errors + "Bluetooth is disabled."
+                        )
+                    }
+                }
+
+            }
+            is BleListContract.Event.OnLocationStatusChange -> {
+                if (!event.isEnable) {
+                    _state.update { currState ->
+                        currState.copy(
+                            isLoading = false,
+                            isScanning = false,
+                            errors = currState.errors + "Location is disabled."
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -115,7 +152,10 @@ class BleListViewModel(
                         is BleScanResource.Error -> {
                             Log.d(TAG, "BleScanResource Error: ${bleDeviceRes.error}")
                             _state.update { currState ->
-                                currState.copy(isLoading = false)
+                                currState.copy(
+                                    isLoading = false,
+                                    errors = currState.errors + bleDeviceRes.error.toString()
+                                )
                             }
                         }
 

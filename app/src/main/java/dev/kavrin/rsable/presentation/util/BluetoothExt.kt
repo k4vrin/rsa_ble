@@ -75,6 +75,25 @@ fun observeLocationState(context: Context): StateFlow<Boolean> {
         }
     }
 
+    // Register the listener for updates
+    try {
+        locationManager.requestLocationUpdates(
+            LocationManager.GPS_PROVIDER,
+            1000L, // Minimum time interval for updates (1 second)
+            0f,    // Minimum distance for updates (0 meters)
+            locationListener
+        )
+        locationManager.requestLocationUpdates(
+            LocationManager.NETWORK_PROVIDER,
+            1000L,
+            0f,
+            locationListener
+        )
+    } catch (e: SecurityException) {
+        // Handle the case where location permissions are not granted.
+        e.printStackTrace()
+    }
+
     locationManager.registerGnssStatusCallback(
         object : GnssStatus.Callback() {
             override fun onStarted() {
