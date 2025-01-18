@@ -1,5 +1,6 @@
 package dev.kavrin.rsable.presentation.navigation
 
+import android.util.Log
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
@@ -127,7 +128,8 @@ fun NavigationManager(
                 BleDetailScreenRoot(
                     viewModel = viewModel,
                     onNavigateBack = {
-                        navController.popBackStack()
+                        Log.d(TAG, "NavigationManager BleDetailScreenRoot nav back: ")
+                        navController.navigateUp()
                     }
                 )
             }
@@ -151,3 +153,5 @@ private inline fun <reified T : ViewModel> NavBackStackEntry.sharedKoinViewModel
     )
 
 }
+
+private const val TAG = "NavigationManager"

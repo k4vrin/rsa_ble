@@ -1,6 +1,11 @@
 package dev.kavrin.rsable.presentation.screens.client.ble_detail
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -10,25 +15,34 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import dev.kavrin.rsable.R
 import dev.kavrin.rsable.presentation.screens.client.ble_list.BleListContract
 import dev.kavrin.rsable.presentation.screens.client.component.BackHandler
@@ -44,7 +58,9 @@ import dev.kavrin.rsable.presentation.util.HorizontalSpacer
 import dev.kavrin.rsable.presentation.util.VerticalSpacer
 import dev.kavrin.rsable.presentation.util.collectInLaunchedEffect
 import dev.kavrin.rsable.presentation.util.use
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
+import kotlin.time.Duration.Companion.seconds
 
 private const val TAG = "BleDetailScreen"
 
@@ -83,197 +99,240 @@ fun BleDetailScreen(
     state: BleDetailContract.State,
     dispatch: (BleDetailContract.Event) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Card(
-            modifier = Modifier
-                .padding(vertical = MaterialTheme.padding.medium)
-                .fillMaxWidth()
-                .weight(1.5f),
-            colors = CardDefaults.cardColors(
-                containerColor = RsOrange,
-                contentColor = RsRed
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = MaterialTheme.padding.extraSmall)
-        ) {
-            Column (
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(MaterialTheme.padding.extraMedium)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.Center
-            ) {
 
-                FlowRow(
-                    verticalArrangement = Arrangement.Center,
-                    horizontalArrangement = Arrangement.Center
+    val currentError = remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(state.errors) {
+        for (err in state.errors) {
+            currentError.value = err
+            delay(2.seconds)
+            currentError.value = null
+            delay(500)
+        }
+        dispatch(BleDetailContract.Event.OnClearErrors)
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        AnimatedVisibility(
+            modifier = Modifier
+                .zIndex(999f),
+            visible = currentError.value != null,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            currentError.value?.let { error ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .background(Color.Red, shape = RoundedCornerShape(8.dp))
+                        .padding(16.dp)
                 ) {
                     Text(
-                        text = "Heart Rate Service:",
+                        text = error,
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Card(
+                modifier = Modifier
+                    .padding(vertical = MaterialTheme.padding.medium)
+                    .fillMaxWidth()
+                    .weight(1.5f),
+                colors = CardDefaults.cardColors(
+                    containerColor = RsOrange,
+                    contentColor = RsRed
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = MaterialTheme.padding.extraSmall)
+            ) {
+                Column (
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(MaterialTheme.padding.extraMedium)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.Center
+                ) {
+
+                    FlowRow(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Heart Rate Service:",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = DarkGreen
+                        )
+
+                        HorizontalSpacer(MaterialTheme.padding.small)
+
+                        Text(
+                            text = BleDetailViewModel.parseUuidToShortForm(state.bleDevice?.services?.firstOrNull()?.uuid),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = DarkGreen
+                        )
+                    }
+
+                    VerticalSpacer(MaterialTheme.padding.medium)
+
+                    Text(
+                        text = "Characteristics:",
                         style = MaterialTheme.typography.titleSmall,
                         color = DarkGreen
                     )
 
-                    HorizontalSpacer(MaterialTheme.padding.small)
-
-                    Text(
-                        text = BleDetailViewModel.parseUuidToShortForm(state.bleDevice?.services?.firstOrNull()?.uuid),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = DarkGreen
-                    )
-                }
-
-                VerticalSpacer(MaterialTheme.padding.medium)
-
-                Text(
-                    text = "Characteristics:",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = DarkGreen
-                )
-
-                state.bleDevice?.services?.firstOrNull()?.gattCharacteristics?.forEach { characteristic ->
-                    Column (
-                        modifier = Modifier
-                            .padding(vertical = MaterialTheme.padding.medium),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                    state.bleDevice?.services?.firstOrNull()?.gattCharacteristics?.forEach { characteristic ->
+                        Column (
+                            modifier = Modifier
+                                .padding(vertical = MaterialTheme.padding.medium),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.Start
                         ) {
-                            Text(
-                                text = parseUuidName(uuid = characteristic.uuid),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = DarkGreen
-                            )
-                            HorizontalSpacer(MaterialTheme.padding.small)
-                            Text(
-                                text = BleDetailViewModel.parseUuidToShortForm(characteristic.uuid),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = DarkGreen
-                            )
-                        }
-                        VerticalSpacer(MaterialTheme.padding.medium)
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            parseUuidProperty(characteristic.uuid).let {
-                                when (it) {
-                                    BleDetailViewModel.Companion.CharacteristicProperty.READABLE -> {
-                                        Text(
-                                            text = "Read value: ",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = DarkGreen
-                                        )
-                                        HorizontalSpacer(MaterialTheme.padding.medium)
-                                        Text(
-                                            text = state.readValue,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = DarkGreen
-                                        )
-                                        HorizontalSpacer(MaterialTheme.padding.extraMedium)
-                                        Button(
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = DarkGreen,
-                                                contentColor = RsLight
-                                            ),
-                                            shape = CircleShape,
-                                            onClick = {
-                                                dispatch(BleDetailContract.Event.OnReadClick(characteristic.uuid))
-                                            }
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.baseline_refresh_24),
-                                                tint = RsLight,
-                                                contentDescription = ""
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = parseUuidName(uuid = characteristic.uuid),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = DarkGreen
+                                )
+                                HorizontalSpacer(MaterialTheme.padding.small)
+                                Text(
+                                    text = BleDetailViewModel.parseUuidToShortForm(characteristic.uuid),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = DarkGreen
+                                )
+                            }
+                            VerticalSpacer(MaterialTheme.padding.medium)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                parseUuidProperty(characteristic.uuid).let {
+                                    when (it) {
+                                        BleDetailViewModel.Companion.CharacteristicProperty.READABLE -> {
+                                            Text(
+                                                text = "Read value: ",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = DarkGreen
                                             )
-                                        }
-                                    }
-                                    BleDetailViewModel.Companion.CharacteristicProperty.WRITABLE -> {
-                                        TextField(
-                                            value = state.writeValue,
-                                            onValueChange = { value ->
-                                                dispatch(BleDetailContract.Event.OnWriteValueChange(value = value))
-                                            },
-                                            label = {
-                                                Text(
-                                                    text = "Write value",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = DarkGreen.copy(alpha = Dimen.DISABLED_ALPHA)
+                                            HorizontalSpacer(MaterialTheme.padding.medium)
+                                            Text(
+                                                text = state.readValue,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = DarkGreen
+                                            )
+                                            HorizontalSpacer(MaterialTheme.padding.extraMedium)
+                                            Button(
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = DarkGreen,
+                                                    contentColor = RsLight
+                                                ),
+                                                shape = CircleShape,
+                                                onClick = {
+                                                    dispatch(BleDetailContract.Event.OnReadClick(characteristic.uuid))
+                                                }
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.baseline_refresh_24),
+                                                    tint = RsLight,
+                                                    contentDescription = ""
                                                 )
-                                            },
-                                            textStyle = MaterialTheme.typography.labelMedium,
-                                            colors = TextFieldDefaults.colors(
-                                                focusedTextColor = DarkGreen,
-                                                unfocusedTextColor = DarkGreen,
-                                                unfocusedLabelColor = RsOrange,
-                                                focusedLabelColor = RsOrange,
-                                                focusedContainerColor = RsPink,
-                                                unfocusedContainerColor = RsPink
+                                            }
+                                        }
+                                        BleDetailViewModel.Companion.CharacteristicProperty.WRITABLE -> {
+                                            TextField(
+                                                value = state.writeValue,
+                                                onValueChange = { value ->
+                                                    dispatch(BleDetailContract.Event.OnWriteValueChange(value = value))
+                                                },
+                                                label = {
+                                                    Text(
+                                                        text = "Write value",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = DarkGreen.copy(alpha = Dimen.DISABLED_ALPHA)
+                                                    )
+                                                },
+                                                textStyle = MaterialTheme.typography.labelMedium,
+                                                colors = TextFieldDefaults.colors(
+                                                    focusedTextColor = DarkGreen,
+                                                    unfocusedTextColor = DarkGreen,
+                                                    unfocusedLabelColor = RsOrange,
+                                                    focusedLabelColor = RsOrange,
+                                                    focusedContainerColor = RsPink,
+                                                    unfocusedContainerColor = RsPink
+                                                )
                                             )
-                                        )
 
-                                        HorizontalSpacer(MaterialTheme.padding.small)
-                                        Button(
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = DarkGreen,
-                                                contentColor = RsLight
-                                            ),
-                                            shape = CircleShape,
-                                            onClick = {
-                                                dispatch(BleDetailContract.Event.OnWriteClick(characteristic.uuid, state.writeValue))
+                                            HorizontalSpacer(MaterialTheme.padding.small)
+                                            Button(
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = DarkGreen,
+                                                    contentColor = RsLight
+                                                ),
+                                                shape = CircleShape,
+                                                onClick = {
+                                                    dispatch(BleDetailContract.Event.OnWriteClick(characteristic.uuid, state.writeValue))
+                                                }
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.round_textsms_24),
+                                                    tint = RsLight,
+                                                    contentDescription = ""
+                                                )
                                             }
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.round_textsms_24),
-                                                tint = RsLight,
-                                                contentDescription = ""
+                                        }
+                                        BleDetailViewModel.Companion.CharacteristicProperty.NOTIFIABLE -> {
+                                            Text(
+                                                text = "value: ",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = DarkGreen
+                                            )
+                                            HorizontalSpacer(MaterialTheme.padding.medium)
+                                            Text(
+                                                text = state.notifValues.toString(),
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = DarkGreen
+                                            )
+                                            HorizontalSpacer(MaterialTheme.padding.extraMedium)
+                                            Button(
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = DarkGreen,
+                                                    contentColor = RsLight
+                                                ),
+                                                shape = CircleShape,
+                                                onClick = {
+                                                    dispatch(BleDetailContract.Event.OnNotifyClick(characteristic.uuid))
+                                                }
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.baseline_notifications_24),
+                                                    tint = RsLight,
+                                                    contentDescription = ""
+                                                )
+                                            }
+                                        }
+                                        BleDetailViewModel.Companion.CharacteristicProperty.UNKNOWN -> {
+                                            Text(
+                                                text = "N/A",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = DarkGreen
                                             )
                                         }
-                                    }
-                                    BleDetailViewModel.Companion.CharacteristicProperty.NOTIFIABLE -> {
-                                        Text(
-                                            text = "value: ",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = DarkGreen
-                                        )
-                                        HorizontalSpacer(MaterialTheme.padding.medium)
-                                        Text(
-                                            text = state.notifValues.toString(),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = DarkGreen
-                                        )
-                                        HorizontalSpacer(MaterialTheme.padding.extraMedium)
-                                        Button(
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = DarkGreen,
-                                                contentColor = RsLight
-                                            ),
-                                            shape = CircleShape,
-                                            onClick = {
-                                                dispatch(BleDetailContract.Event.OnNotifyClick(characteristic.uuid))
-                                            }
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.baseline_notifications_24),
-                                                tint = RsLight,
-                                                contentDescription = ""
-                                            )
-                                        }
-                                    }
-                                    BleDetailViewModel.Companion.CharacteristicProperty.UNKNOWN -> {
-                                        Text(
-                                            text = "N/A",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = DarkGreen
-                                        )
                                     }
                                 }
                             }
@@ -281,16 +340,43 @@ fun BleDetailScreen(
                     }
                 }
             }
+
+            VerticalSpacer(MaterialTheme.padding.extraMedium)
+
+            HeartRateChartWithGrid(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                data = state.notifValues,
+            )
         }
 
-        VerticalSpacer(MaterialTheme.padding.extraMedium)
-
-        HeartRateChartWithGrid(
+        AnimatedVisibility(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            data = state.notifValues,
-        )
+                .align(Alignment.Center)
+                .background(DarkGreen.copy(alpha = Dimen.DISABLED_ALPHA)),
+            visible = state.isLoading || state.isReconnecting
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                ElevatedCard(
+                    modifier = Modifier
+                        .size(60.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+        }
+
     }
 }
 

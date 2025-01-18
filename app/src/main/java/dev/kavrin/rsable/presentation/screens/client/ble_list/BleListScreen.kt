@@ -61,6 +61,7 @@ import dev.kavrin.rsable.domain.model.GattService
 import dev.kavrin.rsable.presentation.screens.client.component.BackHandler
 import dev.kavrin.rsable.presentation.service.BleForegroundService
 import dev.kavrin.rsable.presentation.theme.DarkGreen
+import dev.kavrin.rsable.presentation.theme.Dimen
 import dev.kavrin.rsable.presentation.theme.RsLight
 import dev.kavrin.rsable.presentation.theme.RsOrange
 import dev.kavrin.rsable.presentation.theme.RsPink
@@ -114,7 +115,6 @@ fun BleListScreenRoot(
             is BleListContract.Effect.NavigateToDetail -> {
                 Log.d(TAG, "NavigateToDetail")
                 dispatch(BleListContract.Event.OnStopScan)
-                context.manageBleService(BleListContract.Effect.StopScan)
                 onNavigateToDetail(eff.bleDevice, eff.gattServices)
             }
 
@@ -157,11 +157,6 @@ fun BleListScreen(
         }
         dispatch(BleListContract.Event.OnClearErrors)
     }
-
-    LaunchedEffect(Unit) {
-        dispatch(BleListContract.Event.OnStartScan)
-    }
-
 
     var scanIcon by remember(state.isScanning) {
         mutableStateOf(if (state.isScanning) R.drawable.baseline_stop_circle_24 else R.drawable.baseline_play_circle_24)
@@ -419,7 +414,8 @@ fun BleListScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .background(DarkGreen.copy(alpha = Dimen.DISABLED_ALPHA)),
                 contentAlignment = Alignment.Center
             ) {
                 ElevatedCard(

@@ -65,7 +65,7 @@ class BleRepositoryImpl(
         )
     }
 
-    override suspend fun enableNotifyCharacteristic(characteristicUuid: UUID): Flow<Resource<GattEvent.NotifyCharacteristic, GattEvent.Error>> {
+    override suspend fun enableNotifyCharacteristic(characteristicUuid: UUID): Resource<GattEvent.NotifyCharacteristic, GattEvent.Error> {
         return bleGattManager.enableNotifyCharacteristic(characteristicUuid)
     }
 }

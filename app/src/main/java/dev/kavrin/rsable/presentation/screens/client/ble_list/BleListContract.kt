@@ -12,8 +12,8 @@ interface BleListContract :
 
     @Immutable
     data class State(
-        val isLoading: Boolean = true,
-        val isScanning: Boolean = true,
+        val isLoading: Boolean = false,
+        val isScanning: Boolean = false,
         val errors: List<String?> = emptyList(),
         val bleDevices: Map<MacAddress, BleDevice> = emptyMap(),
     )

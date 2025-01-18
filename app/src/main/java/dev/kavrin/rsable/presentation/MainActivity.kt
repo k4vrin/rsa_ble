@@ -32,7 +32,8 @@ class MainActivity : ComponentActivity() {
             RSA_BLETheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    contentWindowInsets = WindowInsets.ime.union(WindowInsets.navigationBars)
+//                    contentWindowInsets = WindowInsets.ime.union(WindowInsets.navigationBars)
+                    contentWindowInsets = WindowInsets.navigationBars
                 ) { innerPadding ->
                     NavigationManager(
                         modifier = Modifier

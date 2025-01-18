@@ -14,6 +14,6 @@ interface BleGattManager {
     suspend fun disconnectFromDevice()
     suspend fun readCharacteristic(characteristicUuid: UUID): Resource<ByteArray, GattEvent.Error>
     suspend fun writeCharacteristic(characteristicUuid: UUID, value: ByteArray, writeType: WriteType): Resource<Unit, GattEvent.Error>
-    suspend fun enableNotifyCharacteristic(characteristicUuid: UUID): Flow<Resource<GattEvent.NotifyCharacteristic, GattEvent.Error>>
+    suspend fun enableNotifyCharacteristic(characteristicUuid: UUID): Resource<GattEvent.NotifyCharacteristic, GattEvent.Error>
 
 }

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -26,14 +27,7 @@ class BleListViewModel(
 ) : ViewModel(), BleListContract {
 
     private val _state = MutableStateFlow(BleListContract.State())
-    override val state: StateFlow<BleListContract.State> = _state
-        .onStart {}
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = _state.value
-        )
-
+    override val state: StateFlow<BleListContract.State> = _state.asStateFlow()
 
     private val effectChannel = Channel<BleListContract.Effect>()
     override val effect: Flow<BleListContract.Effect> = effectChannel.receiveAsFlow()
@@ -62,18 +56,21 @@ class BleListViewModel(
             }
 
             is BleListContract.Event.OnDeviceClicked -> {
-                _state.update { currState ->
-                    currState.copy(isLoading = true)
-                }
+
 
                 viewModelScope.safeLaunch {
+                    _state.update { currState ->
+                        currState.copy(isLoading = true)
+                    }
                     bleRepository.connectToDevice(event.bleDevice)
 
+                    Log.d(TAG, "start connect to device..")
                     withTimeout(10.seconds) {
                         bleRepository.gattEvents
                             .firstOrNull {
-                                it is Resource.Error || (it is Resource.Success && it.data is GattEvent.ServiceDiscovered)
+                                it is Resource.Error || (it is Resource.Success && (it.data is GattEvent.ServiceDiscovered))
                             }?.let { res ->
+                                Log.d(TAG, "connect res: $res")
                                 when (res) {
                                     is Resource.Error -> {
                                         _state.update { currState ->
@@ -92,13 +89,14 @@ class BleListViewModel(
                                                     gattServices = it.services
                                                 )
                                             )
+
+                                            _state.update { currState ->
+                                                currState.copy(isLoading = false)
+                                            }
                                         }
                                     }
                                 }
                             }
-                        _state.update { currState ->
-                            currState.copy(isLoading = false)
-                        }
                     }
                 }.invokeOnCompletion {
                     _state.update { currState ->
@@ -121,7 +119,6 @@ class BleListViewModel(
                 if (!event.isEnable) {
                     _state.update { currState ->
                         currState.copy(
-                            isLoading = false,
                             isScanning = false,
                             errors = currState.errors + "Bluetooth is disabled."
                         )
@@ -133,7 +130,6 @@ class BleListViewModel(
                 if (!event.isEnable) {
                     _state.update { currState ->
                         currState.copy(
-                            isLoading = false,
                             isScanning = false,
                             errors = currState.errors + "Location is disabled."
                         )
@@ -159,7 +155,6 @@ class BleListViewModel(
                             Log.d(TAG, "BleScanResource Error: ${bleDeviceRes.error}")
                             _state.update { currState ->
                                 currState.copy(
-                                    isLoading = false,
                                     errors = currState.errors + bleDeviceRes.error.toString()
                                 )
                             }
@@ -167,10 +162,6 @@ class BleListViewModel(
 
                         is BleScanResource.Loading -> {
                             Log.d(TAG, "BleScanResource Loading: ${bleDeviceRes}")
-                            _state.update { currState ->
-                                currState.copy(isLoading = true)
-                            }
-
                         }
 
                         is BleScanResource.Success -> {
@@ -179,11 +170,10 @@ class BleListViewModel(
 
                             _state.update { currState ->
                                 currState.copy(
-                                    isLoading = false,
                                     bleDevices = _state.value.bleDevices.plus(bleDevices)
                                 )
                             }
-                            Log.d(TAG, "BleScanResource Success: ${_state.value.bleDevices}")
+//                            Log.d(TAG, "BleScanResource Success: ${_state.value.bleDevices}")
                         }
                     }
                 }

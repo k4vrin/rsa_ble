@@ -21,6 +21,7 @@ import dev.kavrin.rsable.util.safeLaunch
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 import kotlin.coroutines.coroutineContext
@@ -63,14 +65,16 @@ class BleGattManagerImpl(
     )
 
 
-    private val maxRetryCount = 3
-    private val retryDelay = 3.seconds
+//    private val maxRetryCount = 3
+//    private val retryDelay = 3.seconds
+//    private val retryJob: Job? = null
 
-    private val maxReconnectAttempts = 5
-    private val reconnectDelay = 5.seconds
+    private val maxReconnectAttempts = 3
+    private val reconnectDelay = 3.seconds
     private var isReconnecting = false
     private var currentReconnectAttempts = 0
     private var lastConnectedDevice: DiscoveredBleDevice? = null
+    private var reconnectJob: Job? = null
 
 
     private val bluetoothGattMutex = Mutex()
@@ -106,7 +110,7 @@ class BleGattManagerImpl(
 
     private fun onDeviceDisconnected() {
         // Launch the reconnection logic in a coroutine
-        scope.safeLaunch {
+        reconnectJob = scope.safeLaunch {
             reconnectToDevice()
         }
     }
@@ -149,6 +153,11 @@ class BleGattManagerImpl(
             delay(reconnectDelay.inWholeMilliseconds)
         }
 
+        _gattEvents.emit(
+            Resource.error(
+                GattEvent.Error.ConnectionLost(message = "Failed to reconnect after $maxReconnectAttempts attempts.")
+            )
+        )
         logConnection(
             level = Logger.Level.ERROR,
             status = "Reconnect",
@@ -158,12 +167,12 @@ class BleGattManagerImpl(
     }
 
 
-
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             Resource.runCatching {
                 when (newState) {
                     BluetoothProfile.STATE_CONNECTED -> {
+                        reconnectJob?.cancel()
                         isReconnecting = false
                         currentReconnectAttempts = 0
                         logConnection(
@@ -175,6 +184,7 @@ class BleGattManagerImpl(
                             _gattEvents.emit(success(GattEvent.ConnectionState.Connected))
                         }
                     }
+
                     BluetoothProfile.STATE_DISCONNECTED -> {
                         logConnection(
                             level = Logger.Level.WARN,
@@ -186,10 +196,14 @@ class BleGattManagerImpl(
                                 _gattEvents.emit(success(GattEvent.ConnectionState.Disconnected))
                             }
                         } else {
+                            scope.safeLaunch {
+                                _gattEvents.emit(success(GattEvent.ConnectionState.Reconnecting))
+                            }
                             onDeviceDisconnected()
                         }
 
                     }
+
                     BluetoothProfile.STATE_DISCONNECTING -> {
                         logConnection(
                             level = Logger.Level.INFO,
@@ -200,6 +214,7 @@ class BleGattManagerImpl(
                             _gattEvents.emit(success(GattEvent.ConnectionState.Disconnecting))
                         }
                     }
+
                     else -> {
 
                         scope.safeLaunch {
@@ -410,50 +425,45 @@ class BleGattManagerImpl(
     /*************BleGattManager*************/
 
     override suspend fun connectToDevice(discoveredBleDevice: DiscoveredBleDevice): Resource<GattEvent.ConnectionState, GattEvent.Error> {
-        return retryWithDelay(
-            action = {
-                try {
-                    bluetoothGatt = discoveredBleDevice.device.connectGatt(context, false, gattCallback)
-                    if (bluetoothGatt == null) {
-                        logConnection(
-                            level = Logger.Level.ERROR,
-                            status = "Failed",
-                            message = "Failed to connect to device ${discoveredBleDevice.device.name}"
-                        )
-                        return@retryWithDelay Resource.error(
-                            GattEvent.Error.ConnectionLost(
-                                message = "Failed to connect to device ${discoveredBleDevice.device.name}"
-                            )
-                        )
-                    }
+        return try {
+            bluetoothGatt = discoveredBleDevice.device.connectGatt(context, false, gattCallback)
+            if (bluetoothGatt == null) {
+                logConnection(
+                    level = Logger.Level.ERROR,
+                    status = "Failed",
+                    message = "Failed to connect to device ${discoveredBleDevice.device.name}"
+                )
+                return Resource.error(
+                    GattEvent.Error.ConnectionLost(
+                        message = "Failed to connect to device ${discoveredBleDevice.device.name}"
+                    )
+                )
+            }
 
-                    handleConnectionGattEvents().also {
-                        if (it is Resource.Success && it.data is GattEvent.ConnectionState.Connected) {
-                            lastConnectedDevice = discoveredBleDevice
-                        }
-                    }
-                } catch (e: Exception) {
-                    coroutineContext.ensureActive()
-                    logConnection(
-                        level = Logger.Level.ERROR,
-                        status = "Failed",
-                        message = "Exception during connection: ${e.message}",
-                        cause = e
-                    )
-                    Resource.error(
-                        GattEvent.Error.ConnectionLost(message = "Exception during connection: ${e.message}")
-                    )
+            handleConnectionGattEvents().also {
+                if (it is Resource.Success && it.data is GattEvent.ConnectionState.Connected) {
+                    lastConnectedDevice = discoveredBleDevice
                 }
-            },
-            maxRetries = maxRetryCount,
-            delayDuration = retryDelay
-        ).also { result ->
+            }
+        } catch (e: Exception) {
+            coroutineContext.ensureActive()
+            logConnection(
+                level = Logger.Level.ERROR,
+                status = "Failed",
+                message = "Exception during connection: ${e.message}",
+                cause = e
+            )
+            Resource.error(
+                GattEvent.Error.ConnectionLost(message = "Exception during connection: ${e.message}")
+            )
+        }.also { result ->
             when (result) {
                 is Resource.Error -> logConnection(
                     level = Logger.Level.ERROR,
                     status = "Failed",
                     message = "Final connection attempt failed: ${result.cause?.message}"
                 )
+
                 is Resource.Success -> logConnection(
                     level = Logger.Level.INFO,
                     status = "Success",
@@ -467,7 +477,7 @@ class BleGattManagerImpl(
     private suspend fun retryWithDelay(
         action: suspend () -> Resource<GattEvent.ConnectionState, GattEvent.Error>,
         maxRetries: Int,
-        delayDuration: kotlin.time.Duration
+        delayDuration: kotlin.time.Duration,
     ): Resource<GattEvent.ConnectionState, GattEvent.Error> {
         var attempt = 0
         var result: Resource<GattEvent.ConnectionState, GattEvent.Error>
@@ -708,7 +718,7 @@ class BleGattManagerImpl(
         )
     }
 
-    override suspend fun enableNotifyCharacteristic(characteristicUuid: UUID): Flow<Resource<GattEvent.NotifyCharacteristic, GattEvent.Error>> {
+    override suspend fun enableNotifyCharacteristic(characteristicUuid: UUID): Resource<GattEvent.NotifyCharacteristic, GattEvent.Error> {
         operationQueue.send(BleOperation.Notify(characteristicUuid))
         logRead(
             characteristicUuid,
@@ -717,23 +727,44 @@ class BleGattManagerImpl(
             "Characteristic enable notify request $characteristicUuid send"
         )
 
+        _gattEvents.emit(
+            Resource.success(
+                GattEvent.NotifyCharacteristic.Success(
+                    GattCharacteristic(
+                        uuid = characteristicUuid.toString()
+                    )
+                )
+            )
+        )
         return handleNotifyGattEvent(characteristicUuid)
     }
 
-    private fun handleNotifyGattEvent(
+    private suspend fun handleNotifyGattEvent(
         characteristicUuid: UUID,
-    ): Flow<Resource<GattEvent.NotifyCharacteristic, GattEvent.Error>> {
-        return _gattEvents.filter {
-            it is Resource.Error || (it is Resource.Success && it.data is GattEvent.NotifyCharacteristic && it.data.gattCharacteristic.uuid == characteristicUuid.toString())
-        }
-            .map { res ->
+    ): Resource<GattEvent.NotifyCharacteristic, GattEvent.Error> {
+        return withTimeoutOrNull(10.seconds) {
+            _gattEvents.firstOrNull {
+                it is Resource.Error || (it is Resource.Success && it.data is GattEvent.NotifyCharacteristic && it.data.gattCharacteristic.uuid == characteristicUuid.toString())
+            }?.let { res ->
                 when (res) {
-                    is Resource.Error -> Resource.Error(res.cause)
+                    is Resource.Error -> res
                     is Resource.Success -> {
+                        scope.safeLaunch {
+                            _gattEvents.emit(res)
+                        }
                         Resource.Success((res.data as GattEvent.NotifyCharacteristic))
                     }
+
+                    null -> TODO()
                 }
             }
+        } ?: Resource.error(
+            GattEvent.Error.TimeoutError(
+                operation = "Write",
+                uuid = characteristicUuid,
+                message = "Write timeout"
+            )
+        )
     }
 
 

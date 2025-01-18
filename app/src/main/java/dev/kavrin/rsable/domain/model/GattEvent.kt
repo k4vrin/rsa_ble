@@ -6,6 +6,7 @@ sealed interface GattEvent {
     // Connection events
     sealed class ConnectionState : GattEvent {
         data object Connecting : ConnectionState()
+        data object Reconnecting : ConnectionState()
         data object Disconnecting : ConnectionState()
         data object Connected : ConnectionState()
         data object Disconnected : ConnectionState()
