@@ -36,7 +36,7 @@ Add screenshots here to illustrate the steps:
    ![Project Structure](res/project_structure.png)
 
 2. Screenshot of the app running:
-   | <img src="../res/intro.png" width="250"> | <img src="res/target_device_found.png" width="250"> | <img src="heart_rate.png" width="250"> |
+   | <img src="../../res/intro.png" width="250"> | <img src="res/target_device_found.png" width="250"> | <img src="heart_rate.png" width="250"> |
    | <img src="res/detail_read.png" width="250"> | <img src="res/scanning_service.png" width="250"> | <img src="res/notif_chart.png" width="250"> |
 3. Heart rate monitor demo:
    <video src="res/notif_chart.mp4" width="320" height="240" controls>
