@@ -137,16 +137,16 @@ fun IntroScreen(
                 contentDescription = null
             )
             VerticalSpacer(MaterialTheme.padding.medium)
-            RSAButton(
-                title = "Peripheral(Server)",
-                enabled = state.isBLESupported && state.isPermissionGranted,
-                onClick = { dispatch(IntroContract.Event.OnNavigateToPeripheral) }
-            )
+//            RSAButton(
+//                title = "Peripheral(Server)",
+//                enabled = state.isBLESupported && state.isPermissionGranted,
+//                onClick = { dispatch(IntroContract.Event.OnNavigateToPeripheral) }
+//            )
+//
+//            VerticalSpacer(MaterialTheme.padding.medium)
 
-            VerticalSpacer(MaterialTheme.padding.medium)
-
             RSAButton(
-                title = "Central(Client)",
+                title = "Ble Central",
                 enabled = state.isBLESupported && state.isPeripheralModeSupported && state.isPermissionGranted,
                 onClick = { dispatch(IntroContract.Event.OnNavigateToCentral) }
             )
