@@ -31,9 +31,25 @@ Ensure you have the following installed:
     - Connect an Android device or start an emulator.
     - Click the "Run" button or use the shortcut `Shift + F10`.
 
-### Screenshots
+---
 
-Add screenshots here to illustrate the steps:
+### Testing the Application
+
+To test the application:
+1. **Install LightBlue App**
+    - Download and install the LightBlue app from your device's app store (available for Android and iOS).
+
+2. **Add a Virtual Profile**
+    - Open the LightBlue app.
+    - Add a new virtual device with the "Heart Rate" profile.
+    - Ensure the virtual device is broadcasting and can be detected by the application.
+
+3. **Run the Application**
+    - Launch the application and ensure it can connect to the virtual heart rate profile.
+
+---
+
+### Screenshots
 
 1. Screenshot of the project structure:
    ![Project Structure](res/project_structure.png)
@@ -42,7 +58,7 @@ Add screenshots here to illustrate the steps:
 
 | Screenshot 1                        | Screenshot 2                                        | Screenshot 3                               |
 |-------------------------------------|-----------------------------------------------------|--------------------------------------------|
-| ![Intro](res/intro.png)             | ![Target Device Found](res/target_device_found.png) | ![Heart Rate](res/heart_rate.png)              |
+| ![Intro](res/intro.png)             | ![Target Device Found](res/target_device_found.png) | ![Heart Rate](res/heart_rate.png)          |
 | ![Detail Read](res/detail_read.png) | ![Scanning Service](res/scanning_service.png)       | ![Notification Chart](res/notif_chart.png) |
 
 ## 3. Heart rate monitor demo:
@@ -96,6 +112,16 @@ Add screenshots here to illustrate the steps:
 - **KSP (`com.google.devtools.ksp`)**: Kotlin Symbol Processing for annotation processing.
 - **Kotlin Serialization Plugin (`org.jetbrains.kotlin.plugin.serialization`)**: Supports Kotlin
   serialization.
+
+## References
+
+- [Android Documentation](https://developer.android.com/docs)
+- [Android Bluetooth Low Energy Guide (Connect to a BLE sensor)](https://www.youtube.com/watch?v=qyG-SDfYNBE)
+- [Bluetooth Low Energy On Android: Top Tips For The Tricky Bits ](https://www.youtube.com/watch?v=jDykHjn-4Ng)
+- [Jetpack Compose Official Guide](https://developer.android.com/jetpack/compose)
+- [Koin Documentation](https://insert-koin.io/docs)
+- [LightBlue App](https://punchthrough.com/lightblue/)
+- [Mockito Documentation](https://site.mockito.org/)
 
 ---
 

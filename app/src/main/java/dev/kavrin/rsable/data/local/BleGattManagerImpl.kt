@@ -537,9 +537,8 @@ class BleGattManagerImpl(
         } finally {
             bluetoothGatt?.close()
             bluetoothGatt = null
+            lastConnectedDevice = null
         }
-//        operationQueue.cancel()
-//        scope.cancel()
     }
 
     override suspend fun readCharacteristic(characteristicUuid: UUID): Resource<ByteArray, GattEvent.Error> {
