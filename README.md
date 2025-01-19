@@ -36,10 +36,10 @@ Add screenshots here to illustrate the steps:
    ![Project Structure](res/project_structure.png)
 
 2. Screenshot of the app running:
-   | <img src="../../res/intro.png" width="250"> | <img src="res/target_device_found.png" width="250"> | <img src="heart_rate.png" width="250"> |
-   | <img src="res/detail_read.png" width="250"> | <img src="res/scanning_service.png" width="250"> | <img src="res/notif_chart.png" width="250"> |
+   | <img src="https://raw.githubusercontent.com/k4vrin/rsa_ble/{branch}/res/intro.png" width="250"> | <img src="https://raw.githubusercontent.com/k4vrin/rsa_ble/{branch}/res/target_device_found.png" width="250"> | <img src="https://raw.githubusercontent.com/k4vrin/rsa_ble/{branch}/heart_rate.png" width="250"> |
+   | <img src="https://raw.githubusercontent.com/k4vrin/rsa_ble/{branch}/res/detail_read.png" width="250"> | <img src="https://raw.githubusercontent.com/k4vrin/rsa_ble/{branch}/res/scanning_service.png" width="250"> | <img src="https://raw.githubusercontent.com/k4vrin/rsa_ble/{branch}/res/notif_chart.png" width="250"> |
 3. Heart rate monitor demo:
-   <video src="res/notif_chart.mp4" width="320" height="240" controls>
+   <video src="https://raw.githubusercontent.com/k4vrin/rsa_ble/{branch}/res/notif_chart.mp4" width="320" height="240" controls>
    Your browser does not support the video tag.
    </video>
 
