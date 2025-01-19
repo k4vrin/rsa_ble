@@ -139,9 +139,10 @@ class BleGattManagerImpl(
                 Resource.error(
                     GattEvent.Error.ConnectionLost(message = "Reconnection failed: ${e.message}")
                 )
+                return
             }
 
-            if (result is Resource.Success) {
+            if (result is Resource.Success && result.data is GattEvent.ConnectionState.Connected) {
                 logConnection(
                     level = Logger.Level.INFO,
                     status = "Reconnect",
@@ -172,6 +173,9 @@ class BleGattManagerImpl(
             Resource.runCatching {
                 when (newState) {
                     BluetoothProfile.STATE_CONNECTED -> {
+                        scope.safeLaunch {
+                            _gattEvents.emit(success(GattEvent.ConnectionState.Connected))
+                        }
                         reconnectJob?.cancel()
                         isReconnecting = false
                         currentReconnectAttempts = 0
@@ -180,9 +184,6 @@ class BleGattManagerImpl(
                             status = "Connected",
                             message = "Successfully connected to device."
                         )
-                        scope.safeLaunch {
-                            _gattEvents.emit(success(GattEvent.ConnectionState.Connected))
-                        }
                     }
 
                     BluetoothProfile.STATE_DISCONNECTED -> {
@@ -497,7 +498,7 @@ class BleGattManagerImpl(
 
 
     private suspend fun handleConnectionGattEvents(): Resource<GattEvent.ConnectionState, GattEvent.Error> {
-        return withTimeoutOrNull(5.seconds) { // Timeout after 5 seconds
+        return withTimeoutOrNull(10.seconds) { // Timeout after 5 seconds
             _gattEvents.firstOrNull { event ->
                 event is Resource.Error || (event is Resource.Success && event.data is GattEvent.ConnectionState)
             }?.let { res ->
@@ -576,7 +577,7 @@ class BleGattManagerImpl(
     private suspend fun handleReadGattEvent(
         characteristicUuid: UUID,
     ): Resource<ByteArray, GattEvent.Error> {
-        return withTimeoutOrNull(5.seconds) {
+        return withTimeoutOrNull(10.seconds) {
             _gattEvents.firstOrNull {
                 it is Resource.Success && it.data is GattEvent.ReadCharacteristic && it.data.gattCharacteristic.uuid == characteristicUuid.toString()
             }?.let { res ->
@@ -749,13 +750,9 @@ class BleGattManagerImpl(
                 when (res) {
                     is Resource.Error -> res
                     is Resource.Success -> {
-                        scope.safeLaunch {
-                            _gattEvents.emit(res)
-                        }
                         Resource.Success((res.data as GattEvent.NotifyCharacteristic))
                     }
 
-                    null -> TODO()
                 }
             }
         } ?: Resource.error(
@@ -880,7 +877,7 @@ class BleGattManagerImpl(
                     Resource.success(
                         GattEvent.ReadCharacteristic.Failure(
                             gattCharacteristic = GattCharacteristic(uuid.toString()),
-                            reason = "executeRead for $uuid failed"
+                            reason = "Characteristic not found"
                         )
                     )
                 )

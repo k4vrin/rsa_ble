@@ -25,7 +25,7 @@ sealed class Resource<out T, out E> {
 
         when (this) {
             is Success -> transform(data)
-            is Error -> this
+            is Error -> Error(cause)
         }
 
     inline fun <T, E> Resource<T, E>.runCatching(block: () -> T): Resource<T, Throwable> =

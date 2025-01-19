@@ -45,6 +45,10 @@ class BleDetailViewModel(
                                     errors = currState.errors + event.cause?.message
                                 )
                             }
+                            delay(2.seconds)
+                            _effect.send(
+                                BleDetailContract.Effect.NavigateBack
+                            )
                         }
                         is Resource.Success -> {
                             Log.d(TAG, "onEvent Success: ${event.data}")
@@ -53,14 +57,14 @@ class BleDetailViewModel(
                                     _state.update { currState ->
                                         currState.copy(
                                             isReconnecting = false,
-                                            errors = currState.errors + "device connected"
+                                            errors = currState.errors + "Device Connected."
                                         )
                                     }
                                 }
                                 GattEvent.ConnectionState.Connecting -> {
                                     _state.update { currState ->
                                         currState.copy(
-                                            errors = currState.errors + "device connecting"
+                                            errors = currState.errors + "Device Connecting."
                                         )
                                     }
                                 }
@@ -68,7 +72,7 @@ class BleDetailViewModel(
                                     _state.update { currState ->
                                         currState.copy(
                                             isReconnecting = true,
-                                            notifValues = emptyList()
+//                                            notifValues = emptyList()
                                         )
                                     }
 
@@ -76,14 +80,16 @@ class BleDetailViewModel(
                                 GattEvent.ConnectionState.Disconnected -> {
                                     _state.update { currState ->
                                         currState.copy(
-                                            errors = currState.errors + "device disconnected"
+                                            isLoading = false,
+                                            errors = currState.errors + "Device Disconnected"
                                         )
                                     }
+                                    _effect.send(BleDetailContract.Effect.NavigateBack)
                                 }
                                 GattEvent.ConnectionState.Disconnecting -> {
                                     _state.update { currState ->
                                         currState.copy(
-                                            errors = currState.errors + "device disconnecting"
+                                            errors = currState.errors + "Device Disconnecting."
                                         )
                                     }
                                 }
@@ -156,6 +162,7 @@ class BleDetailViewModel(
                                     }
                                 }
                                 is GattEvent.NotifyCharacteristic.Changed -> {
+                                    Log.d(TAG, "NotifyCharacteristic.Changed: ${event.data.value.toHexString()}")
                                     _state.update { currState ->
                                         currState.copy(
                                             errors = currState.errors + "Notify characteristic changed: ${event.data.value.toHexString()}",

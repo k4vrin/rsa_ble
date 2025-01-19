@@ -110,7 +110,6 @@ class BleScanManagerImpl(
         devices[macAddress] = scanResult.toDiscoveredBluetoothDevice()
     }
 
-    // In DiscoveredBleDevice (or a similar class):
     @SuppressLint("MissingPermission")
     private fun DiscoveredBleDevice.hasSameData(scanResult: ScanResult): Boolean {
         // Compare relevant data like RSSI, name, etc.

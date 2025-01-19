@@ -10,13 +10,11 @@ espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.0"
 composeBom = "2025.01.00"
-nordicBle = "2.9.0"
-nordicScanner = "1.6.0"
-arrow = "1.2.4"
 koin = "4.0.1"
-coil3 = "3.0.3"
 accompanist = "0.36.0"
 navigationCompose = "2.8.5"
+ksp = "2.1.0-1.0.29"
+mockito = "5.15.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,13 +35,7 @@ androidx-navigation = { module = "androidx.navigation:navigation-compose", versi
 
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinSerialization" }
 
-nordic-ble = { group = "no.nordicsemi.android", name = "ble", version.ref = "nordicBle" }
-nordic-ble-ktx = { group = "no.nordicsemi.android", name = "ble-ktx", version.ref = "nordicBle" }
-nordic-ble-common = { group = "no.nordicsemi.android", name = "ble-common", version.ref = "nordicBle" }
-nordic-ble-scanner = { group = "no.nordicsemi.android.support.v18", name = "scanner", version.ref = "nordicScanner" }
-
-arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
-arrow-fx-coroutines = { module = "io.arrow-kt:arrow-fx-coroutines", version.ref = "arrow" }
+mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
 
 koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
 koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
@@ -52,16 +44,13 @@ koin-test = { group = "io.insert-koin", name = "koin-test", version.ref = "koin"
 
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist" }
 
-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
-coil-compose-core = { module = "io.coil-kt.coil3:coil-compose-core", version.ref = "coil3" }
-#coil-network-ktor2 = { module = "io.coil-kt.coil3:coil-network-ktor2", version.ref = "coil3" }
-#coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil3" }
-coil-mp = { module = "io.coil-kt.coil3:coil", version.ref = "coil3" }
-
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-parcelable = { id = "org.jetbrains.kotlin.plugin.parcelize" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+
 

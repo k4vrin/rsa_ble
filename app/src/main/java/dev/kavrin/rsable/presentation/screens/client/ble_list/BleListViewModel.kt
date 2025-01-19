@@ -99,6 +99,14 @@ class BleListViewModel(
                             }
                     }
                 }.invokeOnCompletion {
+                    if (it != null) {
+                        _state.update { currState ->
+                            currState.copy(
+                                isLoading = false,
+                                errors = currState.errors + it.message
+                            )
+                        }
+                    }
                     _state.update { currState ->
                         currState.copy(isLoading = false)
                     }

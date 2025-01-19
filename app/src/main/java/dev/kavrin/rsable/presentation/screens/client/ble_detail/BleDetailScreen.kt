@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -147,6 +148,17 @@ fun BleDetailScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+
+            HeartRateChartWithGrid(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                data = state.notifValues,
+            )
+
+            VerticalSpacer(MaterialTheme.padding.medium)
+
             Card(
                 modifier = Modifier
                     .padding(vertical = MaterialTheme.padding.medium)
@@ -167,8 +179,8 @@ fun BleDetailScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
 
-                    FlowRow(
-                        verticalArrangement = Arrangement.Center,
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
@@ -190,7 +202,7 @@ fun BleDetailScreen(
 
                     Text(
                         text = "Characteristics:",
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = DarkGreen
                     )
 
@@ -202,15 +214,17 @@ fun BleDetailScreen(
                             horizontalAlignment = Alignment.Start
                         ) {
                             Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
                                     text = parseUuidName(uuid = characteristic.uuid),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = DarkGreen
                                 )
-                                HorizontalSpacer(MaterialTheme.padding.small)
+                                HorizontalSpacer(MaterialTheme.padding.extraSmall)
                                 Text(
                                     text = BleDetailViewModel.parseUuidToShortForm(characteristic.uuid),
                                     style = MaterialTheme.typography.bodySmall,
@@ -219,8 +233,10 @@ fun BleDetailScreen(
                             }
                             VerticalSpacer(MaterialTheme.padding.medium)
                             Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 parseUuidProperty(characteristic.uuid).let {
                                     when (it) {
@@ -230,13 +246,13 @@ fun BleDetailScreen(
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = DarkGreen
                                             )
-                                            HorizontalSpacer(MaterialTheme.padding.medium)
+                                            HorizontalSpacer(MaterialTheme.padding.small)
                                             Text(
                                                 text = state.readValue,
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = DarkGreen
                                             )
-                                            HorizontalSpacer(MaterialTheme.padding.extraMedium)
+                                            HorizontalSpacer(MaterialTheme.padding.small)
                                             Button(
                                                 colors = ButtonDefaults.buttonColors(
                                                     containerColor = DarkGreen,
@@ -256,6 +272,11 @@ fun BleDetailScreen(
                                         }
                                         BleDetailViewModel.Companion.CharacteristicProperty.WRITABLE -> {
                                             TextField(
+                                                modifier = Modifier
+                                                    .widthIn(
+                                                        min = 100.dp,
+                                                        max = 150.dp
+                                                    ),
                                                 value = state.writeValue,
                                                 onValueChange = { value ->
                                                     dispatch(BleDetailContract.Event.OnWriteValueChange(value = value))
@@ -280,6 +301,7 @@ fun BleDetailScreen(
 
                                             HorizontalSpacer(MaterialTheme.padding.small)
                                             Button(
+                                                modifier = Modifier,
                                                 colors = ButtonDefaults.buttonColors(
                                                     containerColor = DarkGreen,
                                                     contentColor = RsLight
@@ -341,14 +363,7 @@ fun BleDetailScreen(
                 }
             }
 
-            VerticalSpacer(MaterialTheme.padding.extraMedium)
 
-            HeartRateChartWithGrid(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                data = state.notifValues,
-            )
         }
 
         AnimatedVisibility(

@@ -1,9 +1,11 @@
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.kotlin.parcelable)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -57,6 +59,7 @@ android {
     }
 }
 
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -81,11 +84,9 @@ dependencies {
     implementation(libs.koin.compose)
     implementation(libs.koin.test)
 
-    implementation(libs.coil.compose.core)
-    implementation(libs.coil.compose)
-    implementation(libs.coil.mp)
-
     implementation(libs.accompanist.permissions)
 
     implementation(libs.kotlinx.serialization.json)
+
+    testImplementation(libs.mockito.core)
 }

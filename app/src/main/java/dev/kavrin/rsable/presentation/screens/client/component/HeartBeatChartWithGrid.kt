@@ -44,7 +44,9 @@ fun HeartRateChartWithGrid(data: List<Float>, modifier: Modifier = Modifier) {
 
     LaunchedEffect(data) {
         animatedProgress.snapTo(0f) // Reset animation progress
-        animatedProgress.animateTo(1f) // Animate to full progress
+        animatedProgress.animateTo(
+            1f,
+        ) // Animate to full progress
     }
 
     Canvas(modifier = modifier) {
@@ -132,6 +134,7 @@ fun HeartRateChartWithGrid(data: List<Float>, modifier: Modifier = Modifier) {
 }
 
 fun calculateX2(index: Int, dataSize: Int, chartWidth: Float): Float {
+    if (index == 0) return 100f
     return index * (chartWidth / dataSize)
 }
 

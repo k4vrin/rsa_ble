@@ -5,7 +5,6 @@ import dev.kavrin.rsable.domain.model.BleDevice
 import dev.kavrin.rsable.domain.model.BleScanResource
 import dev.kavrin.rsable.domain.model.GattEvent
 import dev.kavrin.rsable.domain.model.Resource
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import java.util.UUID
 

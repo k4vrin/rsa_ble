@@ -53,9 +53,9 @@ fun NavigationManager(
 
                 },
                 onNavigateToCentral = {
-                    navController.navigate(
-                        Route.ClientGraph
-                    )
+                    navController.navigate(Route.ClientGraph) {
+                        popUpTo(Route.Intro) { inclusive = false }
+                    }
                 }
             )
         }
@@ -129,7 +129,7 @@ fun NavigationManager(
                     viewModel = viewModel,
                     onNavigateBack = {
                         Log.d(TAG, "NavigationManager BleDetailScreenRoot nav back: ")
-                        navController.navigateUp()
+                        navController.popBackStack(Route.ClientBleList, inclusive = false)
                     }
                 )
             }
