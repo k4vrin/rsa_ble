@@ -42,12 +42,12 @@ Add screenshots here to illustrate the steps:
 
 | Screenshot 1                        | Screenshot 2                                        | Screenshot 3                               |
 |-------------------------------------|-----------------------------------------------------|--------------------------------------------|
-| ![Intro](res/intro.png)             | ![Target Device Found](res/target_device_found.png) | ![Heart Rate](heart_rate.png)              |
+| ![Intro](res/intro.png)             | ![Target Device Found](res/target_device_found.png) | ![Heart Rate](res/heart_rate.png)              |
 | ![Detail Read](res/detail_read.png) | ![Scanning Service](res/scanning_service.png)       | ![Notification Chart](res/notif_chart.png) |
 
 ## 3. Heart rate monitor demo:
 
-[demo](res/chart_demo.gif)
+![demo](res/chart_demo.gif)
 
 ---
 
