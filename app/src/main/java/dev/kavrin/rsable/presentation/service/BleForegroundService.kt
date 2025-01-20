@@ -25,6 +25,7 @@ class BleForegroundService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO)
     private val channelId = "BLEScanChannel"
     private var observerJob: Job? = null
+    private var isNotificationShown = false
 
     override fun onCreate() {
         super.onCreate()
@@ -113,6 +114,9 @@ class BleForegroundService : Service() {
     }
 
     private fun notifyUser(title: String, message: String) {
+        if (isNotificationShown) return
+        isNotificationShown = true
+
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         val notification = createNotification(

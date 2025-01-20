@@ -31,11 +31,11 @@ import dev.kavrin.rsable.presentation.theme.RSA_BLETheme
 @Composable
 fun HeartRateChartWithGrid(data: List<Float>, modifier: Modifier = Modifier) {
     val path = Path()
-    val pulseSize = 10.dp
+    val pulseRadius = 10.dp
     val chartSize = remember { mutableStateOf(Size.Zero) }
-    val animatedProgress = remember { Animatable(0f) } // For animating path drawing
-    val pulseAnimation = animateFloatAsState(
-        targetValue = if (animatedProgress.value >= 1f) 1f else 0f,
+    val pathProgress = remember { Animatable(0f) } // For animating path drawing
+    val pulseAnimationState = animateFloatAsState(
+        targetValue = if (pathProgress.value >= 1f) 1f else 0f,
         animationSpec = infiniteRepeatable(
             animation = tween(500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -43,8 +43,8 @@ fun HeartRateChartWithGrid(data: List<Float>, modifier: Modifier = Modifier) {
     )
 
     LaunchedEffect(data) {
-        animatedProgress.snapTo(0f) // Reset animation progress
-        animatedProgress.animateTo(
+        pathProgress.snapTo(0f) // Reset animation progress
+        pathProgress.animateTo(
             1f,
         ) // Animate to full progress
     }
@@ -54,14 +54,14 @@ fun HeartRateChartWithGrid(data: List<Float>, modifier: Modifier = Modifier) {
         val chartHeight = size.height
         chartSize.value = size
 
-        val maxHeartRate = 200f // Replace with your actual maximum heart rate value
-        val minHeartRate = 0f // Replace with your actual minimum heart rate value
-        val verticalStep = (maxHeartRate - minHeartRate) / 10 // Divide chart into 5 segments
+        val maxHeartRate = 200f
+        val minHeartRate = 0f
+        val verticalStep = (maxHeartRate - minHeartRate) / 10 // Divide chart into segments
 
         // Draw horizontal lines and labels for heart rate values
         for (i in 0..10) {
             val heartRateValue = maxHeartRate - (i * verticalStep)
-            val y = calculateY2(heartRateValue, chartHeight, maxHeartRate, minHeartRate)
+            val y = calculateY(heartRateValue, chartHeight, maxHeartRate, minHeartRate)
 
             drawLine(
                 color = Color.Gray,
@@ -85,7 +85,7 @@ fun HeartRateChartWithGrid(data: List<Float>, modifier: Modifier = Modifier) {
 
         // Draw vertical lines for time
         for (i in data.indices) {
-            val x = calculateX2(i, data.size, chartWidth)
+            val x = calculateX(i, data.size, chartWidth)
 
             drawLine(
                 color = Color.Gray,
@@ -98,11 +98,11 @@ fun HeartRateChartWithGrid(data: List<Float>, modifier: Modifier = Modifier) {
 
         // Create the wave path based on animated progress
         path.moveTo(0f, chartHeight)
-        val animatedDataPoints = (data.size * animatedProgress.value).toInt()
+        val animatedDataPoints = (data.size * pathProgress.value).toInt()
 
         for (i in 0 until animatedDataPoints) {
-            val x = calculateX2(i, data.size, chartWidth)
-            val y = calculateY2(data[i], chartHeight, maxHeartRate, minHeartRate)
+            val x = calculateX(i, data.size, chartWidth)
+            val y = calculateY(data[i], chartHeight, maxHeartRate, minHeartRate)
             path.lineTo(x, y)
         }
 
@@ -115,13 +115,13 @@ fun HeartRateChartWithGrid(data: List<Float>, modifier: Modifier = Modifier) {
 
         // Highlight peaks with animated pulsing effect
         for (i in 0 until animatedDataPoints) {
-            val x = calculateX2(i, data.size, chartWidth)
-            val y = calculateY2(data[i], chartHeight, maxHeartRate, minHeartRate)
+            val x = calculateX(i, data.size, chartWidth)
+            val y = calculateY(data[i], chartHeight, maxHeartRate, minHeartRate)
 
             // Pulsing effect for circles
             val animatedRadius = if (data[i] > 0) {
 
-                pulseAnimation.value * pulseSize.toPx()
+                pulseAnimationState.value * pulseRadius.toPx()
             } else 0f
 
             drawCircle(
@@ -133,12 +133,48 @@ fun HeartRateChartWithGrid(data: List<Float>, modifier: Modifier = Modifier) {
     }
 }
 
-fun calculateX2(index: Int, dataSize: Int, chartWidth: Float): Float {
+/**
+ * Calculates the X-coordinate for a data point in a chart based on its index.
+ *
+ * This function determines the horizontal position (X-coordinate) of a data point within a chart,
+ * given its index, the total number of data points, and the chart's width.
+ *
+ * The first data point (index 0) is positioned at a fixed offset (100f).
+ * Subsequent data points are evenly distributed across the chart width.
+ *
+ * @param index The index of the data point (starting from 0).
+ * @param dataSize The total number of data points in the chart.
+ * @param chartWidth The width of the chart area.
+ * @return The calculated X-coordinate for the data point.
+ */
+fun calculateX(index: Int, dataSize: Int, chartWidth: Float): Float {
     if (index == 0) return 100f
     return index * (chartWidth / dataSize)
 }
 
-fun calculateY2(value: Float, chartHeight: Float, maxHeartRate: Float, minHeartRate: Float): Float {
+/**
+ * Calculates the Y-coordinate for a given heart rate value on a chart.
+ *
+ * This function takes a heart rate value and scales it to fit within the
+ * vertical bounds of a chart. It normalizes the heart rate value based on
+ * the minimum and maximum heart rate values, and then calculates the Y-coordinate
+ * relative to the chart's height.
+ *
+ * @param value The heart rate value to be plotted on the chart.
+ * @param chartHeight The total height of the chart in pixels.
+ * @param maxHeartRate The maximum heart rate value expected.
+ * @param minHeartRate The minimum heart rate value expected.
+ * @return The calculated Y-coordinate for the given heart rate value.
+ *
+ * @throws IllegalArgumentException if maxHeartRate is less than or equal to minHeartRate
+ *
+ * @sample
+ * ```kotlin
+ * val yCoordinate = calculateY2(80.0f, 500.0f, 180.0f, 60.0f)
+ * println("Y-coordinate: $yCoordinate")
+ * ```
+ */
+fun calculateY(value: Float, chartHeight: Float, maxHeartRate: Float, minHeartRate: Float): Float {
     val normalizedValue = (value - minHeartRate) / (maxHeartRate - minHeartRate)
     return chartHeight * (1 - normalizedValue)
 }

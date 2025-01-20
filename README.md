@@ -36,8 +36,10 @@ Ensure you have the following installed:
 ### Testing the Application
 
 To test the application:
+
 1. **Install LightBlue App**
-    - Download and install the LightBlue app from your device's app store (available for Android and iOS).
+    - Download and install the LightBlue app from your device's app store (available for Android and
+      iOS).
 
 2. **Add a Virtual Profile**
     - Open the LightBlue app.
@@ -52,18 +54,18 @@ To test the application:
 ### Screenshots
 
 1. Screenshot of the project structure:
-   ![Project Structure](res/project_structure.png)
+   ![Project Structure](assets/project_structure.png)
 
 ## 2. Screenshot of the app running:
 
-| Screenshot 1                        | Screenshot 2                                        | Screenshot 3                               |
-|-------------------------------------|-----------------------------------------------------|--------------------------------------------|
-| ![Intro](res/intro.png)             | ![Target Device Found](res/target_device_found.png) | ![Heart Rate](res/heart_rate.png)          |
-| ![Detail Read](res/detail_read.png) | ![Scanning Service](res/scanning_service.png)       | ![Notification Chart](res/notif_chart.png) |
+| Screenshot 1                           | Screenshot 2                                           | Screenshot 3                                  |
+|----------------------------------------|--------------------------------------------------------|-----------------------------------------------|
+| ![Intro](assets/intro.png)             | ![Target Device Found](assets/target_device_found.png) | ![Heart Rate](assets/heart_rate.png)          |
+| ![Detail Read](assets/detail_read.png) | ![Scanning Service](assets/scanning_service.png)       | ![Notification Chart](assets/notif_chart.png) |
 
 ## 3. Heart rate monitor demo:
 
-![demo](res/chart_demo.gif)
+![demo](assets/chart_demo.gif)
 
 ---
 
