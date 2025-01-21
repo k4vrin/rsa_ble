@@ -245,12 +245,16 @@ fun BleDetailScreen(
                                             )
                                             HorizontalSpacer(MaterialTheme.padding.small)
                                             Text(
+                                                modifier = Modifier
+                                                    .weight(1.5f),
                                                 text = state.readValue,
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = DarkGreen
                                             )
                                             HorizontalSpacer(MaterialTheme.padding.small)
                                             Button(
+                                                modifier = Modifier
+                                                    .weight(1f),
                                                 colors = ButtonDefaults.buttonColors(
                                                     containerColor = DarkGreen,
                                                     contentColor = RsLight
@@ -298,7 +302,6 @@ fun BleDetailScreen(
 
                                             HorizontalSpacer(MaterialTheme.padding.small)
                                             Button(
-                                                modifier = Modifier,
                                                 colors = ButtonDefaults.buttonColors(
                                                     containerColor = DarkGreen,
                                                     contentColor = RsLight
@@ -323,12 +326,16 @@ fun BleDetailScreen(
                                             )
                                             HorizontalSpacer(MaterialTheme.padding.medium)
                                             Text(
+                                                modifier = Modifier
+                                                    .weight(1.5f),
                                                 text = state.notifValues.toString(),
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = DarkGreen
                                             )
                                             HorizontalSpacer(MaterialTheme.padding.extraMedium)
                                             Button(
+                                                modifier = Modifier
+                                                    .weight(1f),
                                                 colors = ButtonDefaults.buttonColors(
                                                     containerColor = DarkGreen,
                                                     contentColor = RsLight

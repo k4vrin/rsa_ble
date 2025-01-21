@@ -1,6 +1,5 @@
 package dev.kavrin.rsable.presentation.screens.intro
 
-import android.Manifest
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -25,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.google.accompanist.permissions.rememberPermissionState
 import dev.kavrin.rsable.R
 import dev.kavrin.rsable.presentation.screens.intro.components.RSAButton
 import dev.kavrin.rsable.presentation.theme.DarkGreen
@@ -39,7 +36,6 @@ import dev.kavrin.rsable.presentation.util.collectInLaunchedEffect
 import dev.kavrin.rsable.presentation.util.isBleSupported
 import dev.kavrin.rsable.presentation.util.isPeripheralModeSupported
 import dev.kavrin.rsable.presentation.util.use
-import dev.kavrin.rsable.util.safeLaunch
 import org.koin.androidx.compose.koinViewModel
 
 private const val TAG = "IntroScreen"

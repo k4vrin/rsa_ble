@@ -8,15 +8,7 @@ import dev.kavrin.rsable.domain.model.BleScanResource
 import dev.kavrin.rsable.domain.model.GattEvent
 import dev.kavrin.rsable.domain.model.Resource
 import dev.kavrin.rsable.domain.repository.BleRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flatMap
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import java.util.UUID
 
 

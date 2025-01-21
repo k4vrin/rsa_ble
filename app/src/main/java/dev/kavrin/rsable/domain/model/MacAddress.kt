@@ -2,7 +2,7 @@ package dev.kavrin.rsable.domain.model
 
 
 @JvmInline
-value class MacAddress(val value: String) {
+value class MacAddress private constructor(val value: String) {
 
     init {
         require(isValid(value)) { "Invalid MAC address: $value" }
@@ -15,8 +15,6 @@ value class MacAddress(val value: String) {
         return regex.matches(macAddress)
     }
 
-    fun uppercase(): MacAddress = MacAddress(value.uppercase())
-
     /**
      * Mac address without ":"
      */
@@ -26,14 +24,12 @@ value class MacAddress(val value: String) {
         private const val TAG = "CustomMacAddress"
         val DUMMY = MacAddress("00:11:22:AA:BB:CC")
 
-        /**
-         * Factory for String Mac Address without ":"
-         */
         fun create(str: String): MacAddress {
-            require(str.length == 12) { "Invalid address size: $str" }
-            return str.chunked(2)
-                .zipWithNext { a, b -> "$a:$b" }
-                .joinToString("")
+            require(str.length >= 12) { "Invalid address size: $str" }
+            return str
+                .replace(":", "")
+                .chunked(2)
+                .joinToString(":")
                 .uppercase()
                 .let { MacAddress(it) }
         }

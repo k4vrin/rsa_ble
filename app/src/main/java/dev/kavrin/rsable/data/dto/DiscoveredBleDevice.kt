@@ -63,7 +63,7 @@ data class DiscoveredBleDevice(
     }
 
     fun macAddress(): MacAddress {
-        return MacAddress(device.address.uppercase())
+        return MacAddress.create(device.address)
     }
 
     override fun hashCode(): Int {

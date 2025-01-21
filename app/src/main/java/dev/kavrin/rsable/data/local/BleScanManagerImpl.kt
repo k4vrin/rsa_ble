@@ -27,6 +27,16 @@ import kotlinx.coroutines.flow.asSharedFlow
 class BleScanManagerImpl(
     bleAdapter: BluetoothAdapter,
 ) : ScanCallback(), BleScanManager {
+
+    /**
+     * The [CoroutineScope] used for managing Bluetooth Low Energy (BLE) scanning operations.
+     *
+     * This scope utilizes a [SupervisorJob] to ensure that child coroutines' failures do not affect
+     * other coroutines within the scope. It also uses [Dispatchers.IO] for I/O-bound tasks and
+     * a specific [CoroutineName] for easier debugging.
+     *
+     * @property scope The CoroutineScope instance for managing BLE scanning operations.
+     */
     private val scope = CoroutineScope(
         SupervisorJob() + Dispatchers.IO + CoroutineName("BleScanManagerScope")
     )
@@ -94,7 +104,7 @@ class BleScanManagerImpl(
     /**************ScanCallBack**************/
 
     private fun addDevice(scanResult: ScanResult) {
-        val macAddress = MacAddress(scanResult.device.address.uppercase())
+        val macAddress = MacAddress.create(scanResult.device.address)
         val existingDevice = devices[macAddress]
 
         existingDevice?.let {
