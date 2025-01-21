@@ -8,16 +8,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +27,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -45,7 +43,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.kavrin.rsable.R
-import dev.kavrin.rsable.presentation.screens.client.ble_list.BleListContract
 import dev.kavrin.rsable.presentation.screens.client.component.BackHandler
 import dev.kavrin.rsable.presentation.screens.client.component.HeartRateChartWithGrid
 import dev.kavrin.rsable.presentation.theme.DarkGreen
@@ -370,26 +367,51 @@ fun BleDetailScreen(
             modifier = Modifier
                 .align(Alignment.Center)
                 .background(DarkGreen.copy(alpha = Dimen.DISABLED_ALPHA)),
-            visible = state.isLoading || state.isReconnecting
+            visible = state.isLoading || state.isReconnecting,
+            enter = fadeIn(),
+            exit = fadeOut()
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize(),
-                contentAlignment = Alignment.Center
+
+            Surface(
+                modifier = modifier,
+                color = DarkGreen.copy(alpha = Dimen.DISABLED_ALPHA),
+                shape = RoundedCornerShape(MaterialTheme.padding.medium)
             ) {
-                ElevatedCard(
+                Box(
                     modifier = Modifier
-                        .size(60.dp)
+                        .fillMaxSize()
+                        .background(DarkGreen.copy(alpha = Dimen.DISABLED_ALPHA)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
+                    ElevatedCard(
                         modifier = Modifier
-                            .fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                            .height(120.dp)
+                            .width(150.dp)
                     ) {
-                        CircularProgressIndicator()
+                        Box(
+                            modifier = Modifier
+                                .padding(MaterialTheme.padding.medium)
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                            )
+                            Text(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter),
+                                text = if (state.isReconnecting) "Reconnecting..." else "Loading...",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = RsLight
+                            )
+                        }
                     }
                 }
+
             }
+
+
         }
 
     }

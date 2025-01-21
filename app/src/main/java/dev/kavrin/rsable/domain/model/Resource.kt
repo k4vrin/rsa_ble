@@ -15,18 +15,6 @@ sealed class Resource<out T, out E> {
             is Error -> onError(cause)
         }
 
-    inline fun <T, R, E> Resource<T, E>.map(transform: (T) -> R): Resource<R, E> =
-        when (this) {
-            is Success -> Success(transform(data))
-            is Error -> this
-        }
-
-    inline fun <T, R, E> Resource<T, E>.flatMap(transform: (T) -> Resource<R, E>): Resource<R, E> =
-
-        when (this) {
-            is Success -> transform(data)
-            is Error -> Error(cause)
-        }
 
     inline fun <T, E> Resource<T, E>.runCatching(block: () -> T): Resource<T, Throwable> =
         try {

@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
-import android.location.LocationManager
 import android.os.Build
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
@@ -36,13 +35,11 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -53,7 +50,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.core.location.LocationManagerCompat.isLocationEnabled
 import dev.kavrin.rsable.R
 import dev.kavrin.rsable.domain.model.BleDevice
 import dev.kavrin.rsable.domain.model.BleDeviceType
@@ -71,9 +67,7 @@ import dev.kavrin.rsable.presentation.theme.padding
 import dev.kavrin.rsable.presentation.util.HorizontalSpacer
 import dev.kavrin.rsable.presentation.util.VerticalSpacer
 import dev.kavrin.rsable.presentation.util.collectInLaunchedEffect
-import dev.kavrin.rsable.presentation.util.isBluetoothEnabled
 import dev.kavrin.rsable.presentation.util.isLocationEnabled
-import dev.kavrin.rsable.presentation.util.observeLocationState
 import dev.kavrin.rsable.presentation.util.use
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
@@ -412,24 +406,31 @@ fun BleListScreen(
                 .align(Alignment.Center),
             visible = state.isLoading
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(DarkGreen.copy(alpha = Dimen.DISABLED_ALPHA)),
-                contentAlignment = Alignment.Center
+            Surface(
+                modifier = modifier,
+                color = DarkGreen.copy(alpha = Dimen.DISABLED_ALPHA),
+                shape = RoundedCornerShape(MaterialTheme.padding.medium)
             ) {
-                ElevatedCard(
+                Box(
                     modifier = Modifier
-                        .size(60.dp)
+                        .fillMaxSize()
+                        .background(DarkGreen.copy(alpha = Dimen.DISABLED_ALPHA)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
+                    ElevatedCard(
                         modifier = Modifier
-                            .fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                            .size(60.dp)
                     ) {
-                        CircularProgressIndicator()
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
+
             }
         }
 

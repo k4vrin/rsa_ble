@@ -23,23 +23,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 import kotlin.coroutines.coroutineContext
@@ -87,25 +81,6 @@ class BleGattManagerImpl(
         scope.safeLaunch {
             processOperations()
         }
-
-        scope.safeLaunch {
-            _gattEvents.filter {
-                it is Resource.Error || (it is Resource.Success && it.data is GattEvent.ConnectionState)
-            }.collect {
-                when (it) {
-                    is Resource.Error -> Unit
-                    is Resource.Success -> {
-                        if (it.data is GattEvent.ConnectionState.Connected) {
-
-                            runCatching {
-                                bluetoothGatt?.requestMtu(517)
-                                bluetoothGatt?.discoverServices()
-                            }.getOrNull()
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private fun onDeviceDisconnected() {
@@ -128,7 +103,7 @@ class BleGattManagerImpl(
             )
 
             val result = try {
-                connectToDevice(lastConnectedDevice!!) // Assuming you store the last connected device
+                connectToDevice(lastConnectedDevice!!) // Assuming we stored the last connected device
             } catch (e: Exception) {
                 logConnection(
                     level = Logger.Level.ERROR,
@@ -177,8 +152,11 @@ class BleGattManagerImpl(
                             _gattEvents.emit(success(GattEvent.ConnectionState.Connected))
                         }
                         reconnectJob?.cancel()
+                        reconnectJob = null
                         isReconnecting = false
                         currentReconnectAttempts = 0
+                        bluetoothGatt?.requestMtu(512)
+                        bluetoothGatt?.discoverServices()
                         logConnection(
                             level = Logger.Level.INFO,
                             status = "Connected",
@@ -832,6 +810,8 @@ class BleGattManagerImpl(
                         }
                     }
 
+                // the standard Client Characteristic Configuration descriptor UUID,
+                // which is commonly used for enabling notifications or indications on a characteristic.
                 val descriptor =
                     characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))
                 if (descriptor != null) {
